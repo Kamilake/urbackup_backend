@@ -8,3 +8,12 @@
 		test -e /var/run/urbackupsrv.pid && kill -HUP `cat /var/run/urbackupsrv.pid` || test -e /var/run/urbackupsrv.ready && /bin/systemctl kill -s HUP --kill-who=main urbackup-server.service
 	endscript
 }
+
+"/var/log/urbackup_physical_gate.log" {
+	monthly
+	rotate 60
+	missingok
+	notifempty
+	create 640 urbackup urbackup
+	compress
+}

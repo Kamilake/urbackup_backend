@@ -39,6 +39,7 @@
 #include "../server.h"
 #include "../server_cleanup.h"
 #include "../dao/ServerCleanupDao.h"
+#include "../PhysicalGate.h"
 
 extern ICryptoFactory *crypto_fak;
 extern IFileServ* fileserv;
@@ -1613,12 +1614,22 @@ ACTION_IMPL(backups)
 						}
 						else
 						{
-							ServerSettings settings(db);
-							bool result = false;
-							Server->getThreadPool()->executeWait(new ServerCleanupThread(CleanupAction(settings.getSettings()->backupfolder, t_clientid, delete_now_id, false, &result)));
-							if (!result)
+							PhysicalGate::EGateResult gate = PhysicalGate::requestApproval(
+								"delete file backup id=" + convert(delete_now_id) +
+								" client='" + clientname + "'");
+							if (gate == PhysicalGate::EGateResult_Timeout)
 							{
-								ret.set("delete_now_err", "delete_file_backup_failed");
+								ret.set("delete_now_err", "physical_confirmation_timeout");
+							}
+							else
+							{
+								ServerSettings settings(db);
+								bool result = false;
+								Server->getThreadPool()->executeWait(new ServerCleanupThread(CleanupAction(settings.getSettings()->backupfolder, t_clientid, delete_now_id, false, &result)));
+								if (!result)
+								{
+									ret.set("delete_now_err", "delete_file_backup_failed");
+								}
 							}
 						}
 					}

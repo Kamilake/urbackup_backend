@@ -68,6 +68,7 @@ SStartupStatus startup_status;
 #include "server_status.h"
 #include "server_log.h"
 #include "server_cleanup.h"
+#include "PhysicalGate.h"
 #include "ClientMain.h"
 #include "server_archive.h"
 #include "server_settings.h"
@@ -964,6 +965,7 @@ DLLEXPORT void LoadActions(IServer* pServer)
 	}
 
 	init_chunk_hasher();
+	PhysicalGate::init();
 	ServerCleanupThread::initMutex();
 	ServerAutomaticArchive::initMutex();
 	ServerCleanupThread *server_cleanup=new ServerCleanupThread(CleanupAction());
@@ -1021,6 +1023,8 @@ DLLEXPORT void UnloadActions(void)
 	}
 	
 	ServerLogger::destroy_mutex();
+
+	PhysicalGate::destroy();
 
 	if(is_leak_check)
 	{

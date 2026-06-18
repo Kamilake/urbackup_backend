@@ -499,9 +499,13 @@ int main_fkt(int argc, char *argv[])
 		int rc=getpwnam_r(daemon_user.c_str(), &pwbuf, buf, 1000, &pw);
 	    if(pw!=NULL)
 	    {
-			if (setgroups(0, NULL) != 0)
+			// Load the daemon user's supplementary groups from /etc/group (e.g.
+			// "gpio" for the NeoBackup physical confirmation gate) instead of
+			// dropping all groups. This grants exactly the groups the user is a
+			// member of and nothing more.
+			if (initgroups(daemon_user.c_str(), pw->pw_gid) != 0)
 			{
-				Server->Log("Unable to drop groups. Errno: " + convert(errno), LL_ERROR);
+				Server->Log("Unable to initialize supplementary groups for user \"" + daemon_user + "\". Errno: " + convert(errno), LL_ERROR);
 				return 44;
 			}
 			if (setgid(pw->pw_gid) != 0)
