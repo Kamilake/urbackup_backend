@@ -331,3 +331,9 @@ compile_commands.json
 urbackup_mount_helper
 urbackup_snapshot_helper
 urbackupsrv
+
+# Crypto++ vendored sources (fetched by download_cryptopp.sh)
+/cryptoplugin/src/*
+!/cryptoplugin/src/Makefile.am
+!/cryptoplugin/src/configure.ac
+!/cryptoplugin/src/libcryptopp.pc.in
