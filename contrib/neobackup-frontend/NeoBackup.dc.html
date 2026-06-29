@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0b0e13;color:#e9edf4;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#232b38;border-radius:8px;border:2px solid #0b0e13}
+  ::-webkit-scrollbar-track{background:transparent}
+  input,button,select{font-family:inherit}
+  input:focus{outline:none}
+  @keyframes nb-pulsering{0%{transform:scale(.85);opacity:.7}70%{transform:scale(1.5);opacity:0}100%{opacity:0}}
+  @keyframes nb-glowpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.45)}50%{box-shadow:0 0 44px 6px rgba(245,165,36,.28)}}
+  @keyframes nb-spin{to{transform:rotate(360deg)}}
+  @keyframes nb-fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes nb-blink{0%,100%{opacity:1}50%{opacity:.25}}
+  @keyframes nb-bar{0%{background-position:0 0}100%{background-position:32px 0}}
+  @keyframes nb-scan{0%{transform:translateY(-100%)}100%{transform:translateY(2400%)}}
+</style>
+</helmet>
+
+<div style="{{ rootStyle }}min-height:100vh;display:flex;flex-direction:column">
+
+<sc-if value="{{ notAuthed }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr">
+    <div style="position:relative;overflow:hidden;background:linear-gradient(160deg,#0c1017,#0a0d12 60%,#0b0e13);border-right:1px solid #1b2230;display:flex;flex-direction:column;justify-content:space-between;padding:54px 56px">
+      <div style="display:flex;align-items:center;gap:13px">
+        <div style="width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--ac,#3ddc84),transparent 86%);border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 60%);display:grid;place-items:center"><i class="ph-fill ph-shield-check" style="font-size:21px;color:var(--ac,#3ddc84)"></i></div>
+        <div style="line-height:1.15"><div style="font-weight:600;font-size:15px;letter-spacing:.2px">NeoBackup</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">Ransom&nbsp;Defender</div></div>
+      </div>
+      <div style="max-width:430px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--ac,#3ddc84);margin-bottom:22px">PHYSICAL CONFIRMATION GATE</div>
+        <h1 style="font-size:40px;line-height:1.18;font-weight:600;margin:0 0 20px;letter-spacing:-.5px">원격만으로는<br>백업을 지울 수 없습니다.</h1>
+        <p style="font-size:15px;line-height:1.7;color:#97a1b2;margin:0">관리자 계정이 장악돼도 파괴적 작업은 기기 앞의 물리 버튼을 눌러야만 커밋됩니다. 랜섬웨어로부터 백업 자체를 지키는 마지막 방어선.</p>
+        <div style="margin-top:34px;display:flex;gap:26px">
+          <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">GPIO&nbsp;17</div><div style="font-size:12px;color:#5b6677;margin-top:3px">물리 승인 라인</div></div>
+          <div style="width:1px;background:#1b2230"></div>
+          <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">90<span style="font-size:13px;color:#5b6677">s</span></div><div style="font-size:12px;color:#5b6677;margin-top:3px">기본 승인 대기</div></div>
+          <div style="width:1px;background:#1b2230"></div>
+          <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">append</div><div style="font-size:12px;color:#5b6677;margin-top:3px">감사 로그</div></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#3c4452;font-family:'IBM Plex Mono',monospace">UrBackup Server · web :55414</div>
+      <div style="position:absolute;left:0;right:0;top:0;height:14px;background:linear-gradient(180deg,rgba(61,220,132,.10),transparent);animation:nb-scan 7s linear infinite;pointer-events:none"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:40px">
+      <div style="width:340px">
+        <div style="font-size:13px;color:#5b6677;margin-bottom:6px;font-family:'IBM Plex Mono',monospace">SIGN IN</div>
+        <h2 style="font-size:24px;font-weight:600;margin:0 0 28px">콘솔에 로그인</h2>
+        <label style="display:block;font-size:12px;color:#97a1b2;margin-bottom:7px">사용자명</label>
+        <div style="display:flex;align-items:center;gap:10px;background:#11151c;border:1px solid #232b38;border-radius:9px;padding:0 13px;margin-bottom:16px"><i class="ph ph-user" style="color:#5b6677;font-size:17px"></i><input id="nb_user" autoComplete="username" placeholder="비워두면 익명 로그인" style="flex:1;background:none;border:none;color:#e9edf4;font-size:14px;padding:12px 0"></div>
+        <label style="display:block;font-size:12px;color:#97a1b2;margin-bottom:7px">비밀번호</label>
+        <div style="display:flex;align-items:center;gap:10px;background:#11151c;border:1px solid #232b38;border-radius:9px;padding:0 13px;margin-bottom:24px"><i class="ph ph-lock-simple" style="color:#5b6677;font-size:17px"></i><input id="nb_pass" type="password" autoComplete="current-password" onKeyDown="{{ onLoginKey }}" style="flex:1;background:none;border:none;color:#e9edf4;font-size:14px;padding:12px 0"></div>
+        <button onClick="{{ login }}" style="width:100%;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;color:#06210f;background:var(--ac,#3ddc84);box-shadow:var(--glow,none)">로그인</button>
+        <sc-if value="{{ loginErr }}" hint-placeholder-val="{{ true }}"><div style="margin-top:14px;font-size:12.5px;color:#e5484d;display:flex;align-items:center;gap:7px"><i class="ph ph-warning-circle"></i><span>{{ loginErr }}</span></div></sc-if>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:18px;font-size:11.5px;color:#5b6677"><i class="ph ph-info"></i><span>{{ loginHint }}</span></div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;min-height:100vh">
+
+  <aside style="width:230px;flex-shrink:0;background:#0c1017;border-right:1px solid #1b2230;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:11px;padding:6px 8px 18px">
+      <div style="width:34px;height:34px;border-radius:9px;background:color-mix(in srgb,var(--ac,#3ddc84),transparent 86%);border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 62%);display:grid;place-items:center"><i class="ph-fill ph-shield-check" style="font-size:18px;color:var(--ac,#3ddc84)"></i></div>
+      <div style="line-height:1.2"><div style="font-weight:600;font-size:14px">NeoBackup</div><div style="font-size:10px;color:#5b6677;font-family:'IBM Plex Mono',monospace">Ransom Defender</div></div>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:2px;flex:1">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="9">
+        <button onClick="{{ n.go }}" style="{{ n.style }}" style-hover="background:#141923;color:#e9edf4">
+          <i class="{{ n.icon }}" style="font-size:17px;width:20px"></i>
+          <span style="flex:1;text-align:left">{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="{{ n.badgeStyle }}">{{ n.badge }}</span></sc-if>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="border-top:1px solid #1b2230;padding-top:12px;display:flex;align-items:center;gap:10px">
+      <div style="width:30px;height:30px;border-radius:8px;background:#1c222d;display:grid;place-items:center;font-size:12px;font-weight:600;color:#97a1b2">A</div>
+      <div style="flex:1;line-height:1.25"><div style="font-size:12.5px;font-weight:500">admin</div><div style="font-size:10.5px;color:#5b6677">전체 권한</div></div>
+      <button onClick="{{ logout }}" title="로그아웃" style="background:none;border:none;color:#5b6677;cursor:pointer;font-size:17px;padding:4px" style-hover="color:#e5484d"><i class="ph ph-sign-out"></i></button>
+    </div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:60px;flex-shrink:0;border-bottom:1px solid #1b2230;display:flex;align-items:center;padding:0 26px;gap:16px;background:#0b0e13;position:sticky;top:0;z-index:5">
+      <div style="flex:1"><div style="font-size:16px;font-weight:600">{{ title }}</div><div style="font-size:11.5px;color:#5b6677">{{ subtitle }}</div></div>
+      <div style="display:flex;align-items:center;gap:7px;background:#11151c;border:1px solid #232b38;border-radius:20px;padding:5px 12px 5px 10px;font-size:12px"><span style="width:7px;height:7px;border-radius:50%;background:var(--ac,#3ddc84);box-shadow:0 0 8px var(--ac,#3ddc84)"></span><span style="color:#97a1b2">서버 연결됨</span><span style="color:#3c4452;font-family:'IBM Plex Mono',monospace">:55414</span></div>
+      <div style="display:flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);border-radius:20px;padding:5px 12px;font-size:11.5px;color:var(--ac,#3ddc84)"><i class="ph-fill ph-shield-check"></i><span>Ransom Defender 활성</span></div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace"><i class="ph ph-flask" style="font-size:14px"></i>DEMO</div>
+    </header>
+
+    <main style="flex:1;overflow-y:auto;padding:26px">
+
+      <!-- DASHBOARD -->
+      <sc-if value="{{ v.dashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:16px 18px"><div style="font-size:12px;color:#97a1b2;margin-bottom:9px">전체 클라이언트</div><div style="font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace">{{ counts.total }}</div></div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:16px 18px"><div style="font-size:12px;color:#97a1b2;margin-bottom:9px">온라인</div><div style="font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--ac,#3ddc84)">{{ counts.online }}</div></div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:16px 18px"><div style="font-size:12px;color:#97a1b2;margin-bottom:9px">백업 진행 중</div><div style="font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#4d8dff">{{ counts.running }}</div></div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:16px 18px"><div style="font-size:12px;color:#97a1b2;margin-bottom:9px">주의 필요</div><div style="font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#f5a524">{{ counts.warn }}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px">
+          <sc-for list="{{ clients }}" as="c" hint-placeholder-count="6">
+            <div style="{{ c.cardStyle }}">
+              <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+                <i class="{{ c.osIcon }}" style="font-size:24px;color:#97a1b2;margin-top:1px"></i>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;font-size:14.5px">{{ c.name }}</span><span style="width:7px;height:7px;border-radius:50%;background:{{ c.dot }}"></span></div>
+                  <div style="font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace;margin-top:2px">{{ c.ip }} · {{ c.client_version_string }}</div>
+                </div>
+                <sc-if value="{{ c.hasIssues }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:4px;font-size:11px;color:#f5a524;background:color-mix(in srgb,#f5a524,transparent 88%);padding:3px 7px;border-radius:6px"><i class="ph-fill ph-warning"></i>{{ c.issues }}</span></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:13px"><span style="width:8px;height:8px;border-radius:2px;background:{{ c.statusColor }}"></span><span style="color:{{ c.statusColor }};font-weight:500">{{ c.statusLabel }}</span></div>
+              <sc-if value="{{ c.active }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-bottom:13px"><div style="height:6px;background:#1b2230;border-radius:4px;overflow:hidden"><div style="height:100%;width:{{ c.pcWidth }};background:#4d8dff;border-radius:4px"></div></div><div style="font-size:11px;color:#5b6677;margin-top:5px;font-family:'IBM Plex Mono',monospace">{{ c.pcdone }}%</div></div>
+              </sc-if>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+                <div style="background:#0e1219;border:1px solid #1b2230;border-radius:8px;padding:8px 10px"><div style="font-size:10.5px;color:#5b6677;margin-bottom:3px">파일 백업</div><div style="font-size:12.5px;color:#cfd6e1">{{ c.lastFileRel }}</div></div>
+                <div style="background:#0e1219;border:1px solid #1b2230;border-radius:8px;padding:8px 10px"><div style="font-size:10.5px;color:#5b6677;margin-bottom:3px">이미지 백업</div><div style="font-size:12.5px;color:#cfd6e1">{{ c.lastImgRel }}</div></div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button onClick="{{ c.onBackup }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:8px;padding:8px;font-size:12.5px;font-weight:500;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-play"></i>백업 시작</button>
+                <button onClick="{{ c.onBrowse }}" style="display:flex;align-items:center;gap:6px;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer" style-hover="background:#1c222d"><i class="ph ph-folders"></i>조회</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- PROGRESS -->
+      <sc-if value="{{ v.progress }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ hasProcs }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:26px">
+            <sc-for list="{{ procs }}" as="p" hint-placeholder-count="2">
+              <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:16px 18px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:13px">
+                  <i class="{{ p.osIcon }}" style="font-size:20px;color:#97a1b2"></i>
+                  <div style="flex:1"><div style="font-weight:600;font-size:14px">{{ p.name }}</div><div style="font-size:12px;color:#4d8dff;margin-top:1px">{{ p.actionLabel }}</div></div>
+                  <div style="text-align:right;margin-right:6px"><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfd6e1">{{ p.speedText }}</div><div style="font-size:11px;color:#5b6677">ETA {{ p.etaText }}</div></div>
+                  <sc-if value="{{ p.can_stop_backup }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.onStop }}" title="중단" style="border:1px solid #3a2326;background:color-mix(in srgb,#e5484d,transparent 90%);color:#e5484d;border-radius:8px;padding:7px 11px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:5px" style-hover="background:color-mix(in srgb,#e5484d,transparent 82%)"><i class="ph ph-stop"></i>중단</button></sc-if>
+                </div>
+                <div style="height:8px;background:#0e1219;border-radius:5px;overflow:hidden"><div style="height:100%;width:{{ p.pcWidth }};background:linear-gradient(90deg,#4d8dff,#6ea4ff);border-radius:5px;background-size:32px 32px;animation:nb-bar 1s linear infinite"></div></div>
+                <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace"><span>{{ p.details }}</span><span>{{ p.doneText }} / {{ p.totalText }} · {{ p.pcdone }}% · 큐 {{ p.queue }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noProcs }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:40px;text-align:center;color:#5b6677;margin-bottom:26px"><i class="ph ph-check-circle" style="font-size:30px;color:var(--ac,#3ddc84)"></i><div style="margin-top:10px;font-size:13.5px">진행 중인 작업이 없습니다</div></div>
+        </sc-if>
+        <div style="display:flex;align-items:center;gap:9px;margin:0 0 12px"><i class="ph ph-terminal-window" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">라이브 로그</span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">livelog · WEB-PROD-01</span><span style="width:7px;height:7px;border-radius:50%;background:#e5484d;animation:nb-blink 1.2s infinite"></span></div>
+        <div style="background:#070a0e;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.85;max-height:240px;overflow-y:auto">
+          <sc-for list="{{ livelog }}" as="l" hint-placeholder-count="6"><div style="display:flex;gap:12px"><span style="color:#3c4452">{{ l.t }}</span><span style="{{ l.style }}">{{ l.msg }}</span></div></sc-for>
+        </div>
+      </sc-if>
+
+      <!-- LASTACTS -->
+      <sc-if value="{{ v.lastacts }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr .8fr .8fr 1fr;gap:12px;padding:13px 18px;border-bottom:1px solid #1b2230;font-size:11.5px;color:#5b6677;font-weight:500"><span>클라이언트</span><span>유형</span><span>시각</span><span>소요</span><span>크기</span><span>대상</span></div>
+          <sc-for list="{{ acts }}" as="a" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr .8fr .8fr 1fr;gap:12px;padding:13px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center">
+              <span style="display:flex;align-items:center;gap:9px"><i class="{{ a.icon }}" style="color:{{ a.iconColor }};font-size:16px"></i><span style="font-weight:500">{{ a.name }}</span></span>
+              <span style="color:#97a1b2">{{ a.typeLabel }}</span>
+              <span style="color:#97a1b2;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ a.timeRel }}</span>
+              <span style="color:#97a1b2;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ a.durText }}</span>
+              <span style="color:#cfd6e1;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ a.sizeText }}</span>
+              <span style="color:#5b6677;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ a.details }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- BACKUPS -->
+      <sc-if value="{{ v.backups }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ bkPick }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+            <sc-for list="{{ clients }}" as="c" hint-placeholder-count="6">
+              <button onClick="{{ c.onBrowse }}" style="text-align:left;background:#11151c;border:1px solid #1b2230;border-radius:11px;padding:15px 16px;cursor:pointer;display:flex;align-items:center;gap:13px;color:#e9edf4" style-hover="background:#161b24;border-color:#2a3342">
+                <i class="{{ c.osIcon }}" style="font-size:22px;color:#97a1b2"></i>
+                <div style="flex:1"><div style="font-weight:600;font-size:14px;color:#e9edf4">{{ c.name }}</div><div style="font-size:11.5px;color:#5b6677;margin-top:2px">마지막 백업 {{ c.lastFileRel }}</div></div>
+                <i class="ph ph-caret-right" style="color:#3c4452"></i>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bkList }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+            <button onClick="{{ backToPick }}" style="display:flex;align-items:center;gap:6px;background:#161b24;border:1px solid #232b38;color:#cfd6e1;border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer" style-hover="background:#1c222d"><i class="ph ph-arrow-left"></i>클라이언트</button>
+            <i class="{{ sel.osIcon }}" style="color:#97a1b2;font-size:18px"></i>
+            <span style="font-weight:600;font-size:15px;color:#e9edf4">{{ sel.name }}</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><i class="ph ph-folders" style="color:#97a1b2"></i><span style="font-weight:600;font-size:13.5px">파일 백업</span><span style="font-size:11px;color:var(--ac,#3ddc84);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 88%);padding:2px 8px;border-radius:20px;display:flex;align-items:center;gap:4px"><i class="ph-fill ph-shield-check"></i>물리 게이트 보호</span></div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden;margin-bottom:24px">
+            <div style="display:grid;grid-template-columns:1.1fr .8fr .9fr .8fr 1.5fr;gap:12px;padding:12px 18px;border-bottom:1px solid #1b2230;font-size:11.5px;color:#5b6677">
+              <span>시각</span><span>유형</span><span>크기</span><span>상태</span><span style="text-align:right">작업</span></div>
+            <sc-for list="{{ fileBackups }}" as="b" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1.1fr .8fr .9fr .8fr 1.5fr;gap:12px;padding:11px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#cfd6e1">{{ b.timeAbs }}</span>
+                <span style="color:#97a1b2">{{ b.typeLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">{{ b.sizeText }}</span>
+                <span>{{ b.stateBadge }}</span>
+                <span style="display:flex;gap:6px;justify-content:flex-end">
+                  <button onClick="{{ b.onBrowse }}" title="탐색" style="border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap" style-hover="background:#1c222d"><i class="ph ph-magnifying-glass"></i>탐색</button>
+                  <button onClick="{{ b.onArchive }}" title="보관" style="{{ b.archStyle }}" style-hover="background:#1c222d"><i class="{{ b.archIcon }}"></i></button>
+                  <button onClick="{{ b.onDelete }}" title="삭제 예약" style="border:1px solid #232b38;background:#161b24;color:#97a1b2;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer" style-hover="color:#e5484d"><i class="ph ph-clock-countdown"></i></button>
+                  <button onClick="{{ b.onDeleteNow }}" title="즉시 삭제 (물리 확인)" style="border:1px solid color-mix(in srgb,#e5484d,transparent 60%);background:color-mix(in srgb,#e5484d,transparent 88%);color:#e5484d;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap" style-hover="background:color-mix(in srgb,#e5484d,transparent 80%)"><i class="ph-fill ph-shield-check"></i>즉시 삭제</button>
+                </span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noFileBackups }}" hint-placeholder-val="{{ false }}"><div style="padding:26px;text-align:center;color:#5b6677;font-size:13px">파일 백업이 없습니다</div></sc-if>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><i class="ph ph-hard-drives" style="color:#97a1b2"></i><span style="font-weight:600;font-size:13.5px">이미지 백업</span><span style="font-size:11px;color:#5b6677;background:#161b24;border:1px solid #232b38;padding:2px 8px;border-radius:20px">게이트 미적용 · 즉시 삭제</span></div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1.1fr .7fr .8fr .9fr .8fr 1.4fr;gap:12px;padding:12px 18px;border-bottom:1px solid #1b2230;font-size:11.5px;color:#5b6677"><span>시각</span><span>드라이브</span><span>유형</span><span>크기</span><span>상태</span><span style="text-align:right">작업</span></div>
+            <sc-for list="{{ imageBackups }}" as="b" hint-placeholder-count="2">
+              <div style="display:grid;grid-template-columns:1.1fr .7fr .8fr .9fr .8fr 1.4fr;gap:12px;padding:11px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#cfd6e1">{{ b.timeAbs }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;color:#97a1b2">{{ b.letter }}</span>
+                <span style="color:#97a1b2">{{ b.typeLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">{{ b.sizeText }}</span>
+                <span>{{ b.stateBadge }}</span>
+                <span style="display:flex;gap:6px;justify-content:flex-end">
+                  <button onClick="{{ b.onRestore }}" title="복원 토큰" style="border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px" style-hover="background:#1c222d"><i class="ph ph-key"></i>복원</button>
+                  <button onClick="{{ b.onDeleteNow }}" title="즉시 삭제" style="border:1px solid #232b38;background:#161b24;color:#97a1b2;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer" style-hover="color:#e5484d"><i class="ph ph-trash"></i></button>
+                </span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noImageBackups }}" hint-placeholder-val="{{ false }}"><div style="padding:26px;text-align:center;color:#5b6677;font-size:13px">이미지 백업이 없습니다</div></sc-if>
+          </div>
+
+          <sc-if value="{{ browsing }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:26px;background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid #1b2230;flex-wrap:wrap">
+                <i class="ph ph-folder-open" style="color:var(--ac,#3ddc84)"></i>
+                <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2"><button onClick="{{ cr.go }}" style="background:none;border:none;color:{{ cr.color }};cursor:pointer;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:0">{{ cr.label }}</button><span style="color:#3c4452">/</span></sc-for>
+                <div style="flex:1"></div>
+                <button onClick="{{ onZip }}" style="display:flex;align-items:center;gap:6px;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:#1c222d"><i class="ph ph-file-zip"></i>ZIP</button>
+                <button onClick="{{ onRestoreFolder }}" style="display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-arrow-u-up-left"></i>클라이언트로 복원</button>
+              </div>
+              <sc-for list="{{ files }}" as="f" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:1.8fr .7fr 1fr auto;gap:12px;padding:10px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center;cursor:{{ f.cursor }}" onClick="{{ f.onOpen }}">
+                  <span style="display:flex;align-items:center;gap:10px"><i class="{{ f.icon }}" style="color:{{ f.iconColor }};font-size:17px"></i><span style="color:#dfe5ee">{{ f.name }}</span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#97a1b2">{{ f.sizeText }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5b6677">{{ f.modText }}</span>
+                  <span style="text-align:right">{{ f.action }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </sc-if>
+      </sc-if>
+
+      <!-- RESTORE -->
+      <sc-if value="{{ v.restore }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><i class="ph ph-hard-drives" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">이미지 복원 토큰</span></div>
+            <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:6px 6px 6px">
+              <sc-for list="{{ imageRestoreList }}" as="b" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:9px" style-hover="background:#161b24">
+                  <i class="{{ b.osIcon }}" style="color:#97a1b2;font-size:18px"></i>
+                  <div style="flex:1"><div style="font-size:13.5px;font-weight:500">{{ b.name }} · {{ b.letter }}</div><div style="font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ b.timeAbs }} · {{ b.sizeText }}</div></div>
+                  <button onClick="{{ b.onIssue }}" style="display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-key"></i>토큰 발급</button>
+                </div>
+              </sc-for>
+            </div>
+            <p style="font-size:12px;color:#5b6677;line-height:1.7;margin:14px 2px 0">이미지 복원은 복구 환경(부팅 CD)이 토큰·authkey로 서버에 접속해 수행합니다. 웹 콘솔은 인가 토큰만 발급합니다.</p>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><i class="ph ph-ticket" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">발급된 토큰 · 복원 작업</span></div>
+            <sc-if value="{{ hasRestoreItems }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ restoreItems }}" as="r" hint-placeholder-count="1">
+                  <div style="background:#11151c;border:1px solid {{ r.border }};border-radius:11px;padding:14px 16px;animation:nb-fadeup .3s ease">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><i class="{{ r.icon }}" style="color:{{ r.color }}"></i><span style="font-weight:600;font-size:13px;color:{{ r.color }}">{{ r.title }}</span><span style="flex:1"></span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ r.client }}</span></div>
+                    <sc-for list="{{ r.rows }}" as="kv" hint-placeholder-count="2"><div style="display:flex;gap:10px;padding:6px 0;border-top:1px solid #141923;font-size:12px"><span style="color:#5b6677;width:64px;flex-shrink:0">{{ kv.k }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#cfd6e1;word-break:break-all">{{ kv.v }}</span></div></sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noRestoreItems }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#11151c;border:1px dashed #232b38;border-radius:12px;padding:36px;text-align:center;color:#5b6677"><i class="ph ph-ticket" style="font-size:26px"></i><div style="margin-top:9px;font-size:13px">발급된 토큰이나 진행 중인 복원이 없습니다</div></div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- LOGS -->
+      <sc-if value="{{ v.logs }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start">
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid #1b2230;font-size:11.5px;color:#5b6677;display:flex;align-items:center;gap:7px"><i class="ph ph-funnel"></i>최근 백업 로그</div>
+            <sc-for list="{{ logsList }}" as="lg" hint-placeholder-count="6">
+              <button onClick="{{ lg.onSelect }}" style="{{ lg.rowStyle }}" style-hover="background:#161b24">
+                <i class="{{ lg.icon }}" style="color:{{ lg.iconColor }};font-size:16px"></i>
+                <div style="flex:1;text-align:left"><div style="font-size:13px;font-weight:500">{{ lg.name }}</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ lg.timeRel }} · {{ lg.typeLabel }}</div></div>
+                <sc-if value="{{ lg.hasErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;color:#e5484d;background:color-mix(in srgb,#e5484d,transparent 88%);padding:2px 7px;border-radius:20px">{{ lg.errors }} 오류</span></sc-if>
+                <sc-if value="{{ lg.hasWarn }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;color:#f5a524;background:color-mix(in srgb,#f5a524,transparent 88%);padding:2px 7px;border-radius:20px">{{ lg.warnings }} 경고</span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <div style="background:#070a0e;border:1px solid #1b2230;border-radius:12px;overflow:hidden;min-height:420px">
+            <div style="padding:12px 16px;border-bottom:1px solid #1b2230;display:flex;align-items:center;gap:9px"><i class="ph ph-scroll" style="color:#97a1b2"></i><span style="font-weight:600;font-size:13px">{{ logTitle }}</span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ logMeta }}</span></div>
+            <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.95">
+              <sc-for list="{{ logBody }}" as="l" hint-placeholder-count="8"><div style="display:flex;gap:12px"><span style="{{ l.tag }}">{{ l.level }}</span><span style="color:#3c4452">{{ l.t }}</span><span style="{{ l.style }}">{{ l.msg }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STATS -->
+      <sc-if value="{{ v.stats }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start">
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px"><i class="ph ph-chart-bar" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">클라이언트별 사용 용량</span><span style="flex:1"></span><span style="font-size:11.5px;color:#5b6677">파일 <span style="color:var(--ac,#3ddc84)">■</span> · 이미지 <span style="color:#4d8dff">■</span></span></div>
+            <div style="display:flex;flex-direction:column;gap:15px">
+              <sc-for list="{{ usage }}" as="u" hint-placeholder-count="6">
+                <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px"><span style="font-weight:500">{{ u.name }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#97a1b2">{{ u.usedText }}</span></div>
+                <div style="display:flex;height:9px;border-radius:5px;overflow:hidden;background:#0e1219"><div style="width:{{ u.fileW }};background:var(--ac,#3ddc84)"></div><div style="width:{{ u.imgW }};background:#4d8dff"></div></div></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px"><i class="ph ph-chart-pie" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">저장소 점유</span></div>
+            <div style="display:flex;align-items:center;gap:22px">
+              <div style="width:150px;height:150px;border-radius:50%;background:{{ pieStyle }};flex-shrink:0;position:relative"><div style="position:absolute;inset:34px;border-radius:50%;background:#11151c;display:grid;place-items:center"><div style="text-align:center"><div style="font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace">{{ totalUsed }}</div><div style="font-size:10px;color:#5b6677">총 사용</div></div></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ pieLegend }}" as="p" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:9px;font-size:12.5px"><span style="width:9px;height:9px;border-radius:3px;background:{{ p.color }}"></span><span style="flex:1">{{ p.name }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#97a1b2">{{ p.pct }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- SETTINGS -->
+      <sc-if value="{{ v.settings }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:760px">
+          <div style="background:linear-gradient(150deg,color-mix(in srgb,var(--ac,#3ddc84),transparent 92%),#11151c 55%);border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 70%);border-radius:14px;padding:20px 22px;margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><i class="ph-fill ph-shield-check" style="color:var(--ac,#3ddc84);font-size:20px"></i><span style="font-weight:600;font-size:15px">Ransom Defender · 물리 확인 게이트</span></div>
+            <p style="font-size:12.5px;color:#97a1b2;margin:0 0 18px;line-height:1.6">파일 백업 즉시 삭제(<span style="font-family:'IBM Plex Mono',monospace;color:#cfd6e1">delete_now</span>) 시 GPIO 물리 버튼 승인을 요구합니다.</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:1px solid #1b2230">
+              <div><div style="font-size:13.5px;font-weight:500">게이트 활성화</div><div style="font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace">physical_gate_disabled = {{ gateDisabledStr }}</div></div>
+              <button onClick="{{ toggleGate }}" style="{{ gateToggleStyle }}"><span style="{{ gateKnobStyle }}"></span></button>
+            </div>
+            <div style="padding:13px 0;border-top:1px solid #1b2230">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13.5px;font-weight:500">승인 대기 시간</div><div style="font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace">physical_gate_timeout_ms</div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ac,#3ddc84)">{{ gateTimeout }}s</span></div>
+              <input type="range" min="30" max="300" step="5" value="{{ gateTimeout }}" onInput="{{ onTimeout }}" style="width:100%;accent-color:#3ddc84">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:13px;border-top:1px solid #1b2230">
+              <div><div style="font-size:11.5px;color:#5b6677;margin-bottom:5px">GPIO 칩 / 라인</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfd6e1">gpiochip0 : 17</div></div>
+              <div><div style="font-size:11.5px;color:#5b6677;margin-bottom:5px">감사 로그</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#cfd6e1;word-break:break-all">/var/log/urbackup_physical_gate.log</div></div>
+            </div>
+          </div>
+          <div style="background:#11151c;border:1px solid #1b2230;border-radius:14px;padding:20px 22px">
+            <div style="font-weight:600;font-size:14px;margin-bottom:16px">일반 설정</div>
+            <sc-for list="{{ generalSettings }}" as="g" hint-placeholder-count="4"><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #141923;font-size:13px"><div><div style="font-weight:500">{{ g.label }}</div><div style="font-size:11.5px;color:#5b6677">{{ g.hint }}</div></div><span style="font-family:'IBM Plex Mono',monospace;color:#cfd6e1;font-size:13px">{{ g.value }}</span></div></sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- USERS -->
+      <sc-if value="{{ v.users }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:820px;background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
+          <div style="display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #1b2230"><span style="font-weight:600;font-size:14px;flex:1">사용자</span><button style="display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-plus"></i>사용자 추가</button></div>
+          <div style="display:grid;grid-template-columns:1fr 2fr .8fr;gap:12px;padding:12px 18px;border-bottom:1px solid #1b2230;font-size:11.5px;color:#5b6677"><span>사용자명</span><span>권한 도메인</span><span style="text-align:right">작업</span></div>
+          <sc-for list="{{ users }}" as="u" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1fr 2fr .8fr;gap:12px;padding:13px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center">
+              <span style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;background:#1c222d;display:grid;place-items:center;font-size:12px;color:#97a1b2">{{ u.initial }}</span><span style="font-weight:500">{{ u.name }}</span><sc-if value="{{ u.super }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;color:var(--ac,#3ddc84);border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 60%);padding:1px 6px;border-radius:5px">admin</span></sc-if></span>
+              <span style="display:flex;flex-wrap:wrap;gap:5px"><sc-for list="{{ u.rights }}" as="r" hint-placeholder-count="3"><span style="font-size:11px;color:#97a1b2;background:#161b24;border:1px solid #232b38;padding:2px 8px;border-radius:6px;font-family:'IBM Plex Mono',monospace">{{ r }}</span></sc-for></span>
+              <span style="display:flex;gap:6px;justify-content:flex-end"><button style="border:1px solid #232b38;background:#161b24;color:#97a1b2;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer" style-hover="color:#e9edf4"><i class="ph ph-pencil-simple"></i></button><button style="border:1px solid #232b38;background:#161b24;color:#97a1b2;border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer" style-hover="color:#e5484d"><i class="ph ph-trash"></i></button></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+    </main>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ PHYSICAL GATE MODAL ============ -->
+<sc-if value="{{ gate.open }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(4,6,9,.78);backdrop-filter:blur(6px);animation:nb-fadeup .2s ease">
+    <div style="width:540px;max-width:92vw;background:#10141b;border:1px solid {{ gate.border }};border-radius:18px;padding:34px 38px 30px;box-shadow:0 30px 80px rgba(0,0,0,.6);text-align:center;position:relative;overflow:hidden">
+      <div style="position:absolute;left:0;right:0;top:0;height:3px;background:{{ gate.color }}"></div>
+
+      <div style="position:relative;width:120px;height:120px;margin:6px auto 22px">
+        <sc-if value="{{ gate.pulse }}" hint-placeholder-val="{{ true }}">
+          <span style="position:absolute;inset:0;border-radius:50%;border:2px solid {{ gate.color }};animation:nb-pulsering 1.8s ease-out infinite"></span>
+          <span style="position:absolute;inset:0;border-radius:50%;border:2px solid {{ gate.color }};animation:nb-pulsering 1.8s ease-out infinite .6s"></span>
+        </sc-if>
+        <div style="position:absolute;inset:18px;border-radius:50%;background:color-mix(in srgb,{{ gate.color }},transparent 86%);border:1.5px solid {{ gate.color }};display:grid;place-items:center"><i class="{{ gate.icon }}" style="font-size:40px;color:{{ gate.color }}"></i></div>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2.5px;color:{{ gate.color }};margin-bottom:12px">{{ gate.word }}</div>
+      <h2 style="font-size:22px;font-weight:600;margin:0 0 10px;line-height:1.35">{{ gate.head }}</h2>
+      <p style="font-size:13.5px;color:#97a1b2;line-height:1.6;margin:0 auto;max-width:400px">{{ gate.sub }}</p>
+
+      <sc-if value="{{ gate.showCountdown }}" hint-placeholder-val="{{ true }}">
+        <div style="margin:24px auto 6px;width:104px;height:104px;position:relative">{{ ring }}<div style="position:absolute;inset:0;display:grid;place-items:center"><div><div style="font-size:30px;font-weight:600;font-family:'IBM Plex Mono',monospace">{{ gate.remaining }}</div><div style="font-size:10px;color:#5b6677;margin-top:-2px">초</div></div></div></div>
+      </sc-if>
+
+      <sc-if value="{{ gate.showDevice }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:22px;background:#0a0d12;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left">
+          <div style="width:40px;height:40px;border-radius:9px;background:#161b24;border:1px solid #232b38;display:grid;place-items:center"><i class="ph ph-cpu" style="font-size:20px;color:#97a1b2"></i></div>
+          <div style="flex:1"><div style="font-size:12.5px;font-weight:500">라즈베리파이 · GPIO 17</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">falling-edge · 250ms debounce</div></div>
+          <button onClick="{{ gate.demoPress }}" style="display:flex;align-items:center;gap:7px;border:none;border-radius:10px;padding:10px 15px;font-size:12.5px;font-weight:600;cursor:pointer;color:#06210f;background:var(--ac,#3ddc84);animation:nb-glowpulse 2s ease-in-out infinite" style-active="transform:scale(.95)"><i class="ph-fill ph-radio-button"></i>버튼 누르기</button>
+        </div>
+        <div style="font-size:10.5px;color:#3c4452;margin-top:10px;font-family:'IBM Plex Mono',monospace">데모 — 실제 배포에서는 물리 버튼이 이 자리를 대신합니다</div>
+      </sc-if>
+
+      <sc-if value="{{ gate.showConfirm }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:10px;margin-top:26px">
+          <button onClick="{{ gate.close }}" style="flex:1;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:10px;padding:12px;font-size:13.5px;font-weight:500;cursor:pointer" style-hover="background:#1c222d">취소</button>
+          <button onClick="{{ gate.confirmDelete }}" style="flex:1;border:none;background:#e5484d;color:#fff;border-radius:10px;padding:12px;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#d23b40">즉시 삭제</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ gate.showCancel }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ gate.close }}" style="margin-top:24px;background:none;border:1px solid #232b38;color:#97a1b2;border-radius:10px;padding:10px 22px;font-size:12.5px;cursor:pointer" style-hover="background:#161b24">취소 (요청 중단)</button>
+      </sc-if>
+
+      <sc-if value="{{ gate.showClose }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ gate.close }}" style="margin-top:24px;border:none;background:{{ gate.color }};color:#06210f;border-radius:10px;padding:11px 28px;font-size:13px;font-weight:600;cursor:pointer">확인</button>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+</div>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#0b0e13"/><g transform="translate(30 28)"><rect x="0" y="0" width="40" height="44" rx="9" fill="none" stroke="#3ddc84" stroke-width="3"/><circle cx="20" cy="20" r="9" fill="none" stroke="#3ddc84" stroke-width="3"/><rect x="16" y="28" width="8" height="10" rx="2" fill="#3ddc84"/></g></svg>
+</template></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3ddc84&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;enableGlow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;progress&quot;,&quot;lastacts&quot;,&quot;backups&quot;,&quot;restore&quot;,&quot;logs&quot;,&quot;stats&quot;,&quot;settings&quot;,&quot;users&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;gateTimeout&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:90,&quot;min&quot;:30,&quot;max&quot;:300,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    // ===== live-server wiring =====
+    // DEMO=true  -> 내장 목업/시뮬레이션 (오프라인 데모)
+    // DEMO=false -> 실제 UrBackup 서버 Web API (same-origin /x?a=...)
+    // URL에 ?demo=1 / ?demo=0 으로도 강제 가능.
+    this.DEMO = (()=>{ try{ const p=new URLSearchParams(location.search).get('demo');
+      if(p==='1'||p==='true') return true; if(p==='0'||p==='false') return false; }catch(e){}
+      return false; })();
+    this._ses = null;     // 세션 ID (api()가 자동 첨부)
+    this._rights = null;  // login 응답의 권한 도메인 맵
+    try{ this._ses = localStorage.getItem('nb_ses') || null; }catch(e){}
+    const now = Math.floor(Date.now()/1000);
+    this.now = now;
+    const GB=1073741824, MB=1048576, H=3600, D=86400;
+    this.U={GB,MB,H,D};
+    this.actionLabels=['유휴','증분 파일 백업','전체 파일 백업','증분 이미지 백업','전체 이미지 백업','증분 파일 재개','전체 파일 재개','CDP 동기화','파일 복원','이미지 복원','클라이언트 업데이트','ident 오류','클라이언트 과다','인증 오류','UID 변경됨','인증 중','설정 오류','시작 중'];
+
+    const clients=[
+      {id:1,name:'DESKTOP-NOA',os:'windows',osv:'Windows 11 Pro',cv:'2.5.31',ip:'192.168.0.10',online:true,lastbackup:now-2*H,lastimage:now-20*H,issues:0,status:0,nopath:false},
+      {id:2,name:'WEB-PROD-01',os:'linux',osv:'Ubuntu 22.04 LTS',cv:'2.5.31',ip:'10.0.1.4',online:true,lastbackup:now-30*60,lastimage:0,issues:0,status:2,nopath:false},
+      {id:3,name:'MACBOOK-LEE',os:'osx',osv:'macOS 14 Sonoma',cv:'2.5.29',ip:'192.168.0.22',online:false,lastbackup:now-2*D,lastimage:0,issues:2,status:0,nopath:false},
+      {id:4,name:'DB-MAIN',os:'linux',osv:'Debian 12',cv:'2.5.31',ip:'10.0.1.9',online:true,lastbackup:now-2*H,lastimage:now-2*H,issues:0,status:3,nopath:false},
+      {id:5,name:'FINANCE-PC',os:'windows',osv:'Windows 10 Pro',cv:'2.5.31',ip:'192.168.0.41',online:true,lastbackup:0,lastimage:0,issues:0,status:0,nopath:true},
+      {id:6,name:'KIOSK-03',os:'windows',osv:'Windows 10 IoT',cv:'2.4.13',ip:'192.168.5.30',online:false,lastbackup:now-31*D,lastimage:0,issues:5,status:0,nopath:false},
+    ];
+    const progress=[
+      {name:'WEB-PROD-01',clientid:2,action:2,pcdone:42,queue:3,id:5,logid:123,details:'/var/www/html/uploads',total_bytes:48*GB,done_bytes:20*GB,eta_ms:7*60000,speed_bpms:62000,paused:false,can_stop_backup:true},
+      {name:'DB-MAIN',clientid:4,action:3,pcdone:78,queue:0,id:8,logid:124,details:'/dev/sda2 (image)',total_bytes:220*GB,done_bytes:171*GB,eta_ms:4*60000,speed_bpms:140000,paused:false,can_stop_backup:true},
+    ];
+    const lastacts=[
+      {id:421,clientid:1,name:'DESKTOP-NOA',backuptime:now-2*H,incremental:1,duration:412,size_bytes:1.2*GB,image:0,del:false,details:'C:'},
+      {id:420,clientid:4,name:'DB-MAIN',backuptime:now-2*H,incremental:0,duration:5240,size_bytes:171*GB,image:1,del:false,details:'/dev/sda2'},
+      {id:419,clientid:2,name:'WEB-PROD-01',backuptime:now-3*H,incremental:1,duration:184,size_bytes:0.4*GB,image:0,del:false,details:'/'},
+      {id:418,clientid:3,name:'MACBOOK-LEE',backuptime:now-2*D,incremental:1,duration:902,size_bytes:2.1*GB,image:0,del:false,details:'/Users'},
+      {id:417,clientid:1,name:'DESKTOP-NOA',backuptime:now-26*H,incremental:0,duration:7200,size_bytes:31*GB,image:0,del:false,details:'C:'},
+      {id:416,clientid:4,name:'DB-MAIN',backuptime:now-3*D,incremental:0,duration:120,size_bytes:-1,image:0,del:true,details:'retention'},
+    ];
+    const bk={
+      1:{fileBackups:[
+          {id:5021,backuptime:now-2*H,incremental:1,size_bytes:1.2*GB,archived:0},
+          {id:5018,backuptime:now-26*H,incremental:0,size_bytes:31*GB,archived:0},
+          {id:5009,backuptime:now-8*D,incremental:1,size_bytes:0.8*GB,archived:1},
+        ],imageBackups:[
+          {id:71,backuptime:now-20*H,incremental:0,size_bytes:180*GB,letter:'C:',archived:0},
+        ]},
+      2:{fileBackups:[
+          {id:6102,backuptime:now-3*H,incremental:1,size_bytes:0.4*GB,archived:0},
+          {id:6098,backuptime:now-27*H,incremental:0,size_bytes:48*GB,archived:0},
+        ],imageBackups:[]},
+      4:{fileBackups:[
+          {id:7044,backuptime:now-2*H,incremental:1,size_bytes:2.1*GB,archived:0},
+        ],imageBackups:[
+          {id:88,backuptime:now-2*H,incremental:0,size_bytes:220*GB,letter:'/dev/sda2',archived:0},
+          {id:80,backuptime:now-7*D,incremental:0,size_bytes:218*GB,letter:'/dev/sda2',archived:1},
+        ]},
+    };
+    this.tree={
+      '/':[{name:'Documents',dir:true},{name:'Projects',dir:true},{name:'report-2026.pdf',dir:false,size:248213,mod:now-3*D},{name:'backup.tar.gz',dir:false,size:1843200312,mod:now-9*D}],
+      '/Documents':[{name:'contracts',dir:true},{name:'invoice_q1.xlsx',dir:false,size:88210,mod:now-12*D},{name:'notes.txt',dir:false,size:1422,mod:now-2*D}],
+      '/Documents/contracts':[{name:'neowine_msa.pdf',dir:false,size:512300,mod:now-40*D},{name:'nda_2025.pdf',dir:false,size:208112,mod:now-90*D}],
+      '/Projects':[{name:'neobackup',dir:true},{name:'website',dir:true}],
+      '/Projects/neobackup':[{name:'PhysicalGate.cpp',dir:false,size:14820,mod:now-5*D},{name:'PhysicalGate.h',dir:false,size:3210,mod:now-5*D},{name:'README.md',dir:false,size:6044,mod:now-5*D}],
+      '/Projects/website':[{name:'index.html',dir:false,size:9210,mod:now-30*D}],
+    };
+    const logs=[
+      {id:301,name:'WEB-PROD-01',time:now-1800,errors:0,warnings:1,image:0,incremental:1},
+      {id:300,name:'DESKTOP-NOA',time:now-2*H,errors:0,warnings:0,image:0,incremental:1},
+      {id:299,name:'DB-MAIN',time:now-2*H,errors:1,warnings:2,image:1,incremental:0},
+      {id:298,name:'MACBOOK-LEE',time:now-2*D,errors:0,warnings:2,image:0,incremental:1},
+      {id:297,name:'KIOSK-03',time:now-31*D,errors:3,warnings:0,image:0,incremental:1},
+      {id:296,name:'DB-MAIN',time:now-7*D,errors:0,warnings:0,image:1,incremental:0},
+    ];
+    this.logBodies={
+      301:[{l:0,t:'14:02:11',m:'Starting unscheduled incremental file backup of "WEB-PROD-01"'},{l:0,t:'14:02:13',m:'Indexing of "/var/www" done. 12,402 files'},{l:1,t:'14:04:55',m:'Warning: /var/www/cache locked, skipped 14 files'},{l:0,t:'14:05:32',m:'Transferred 412 MB · backup time 184s'},{l:0,t:'14:05:32',m:'Backup succeeded with warnings'}],
+      300:[{l:0,t:'13:31:02',m:'Starting incremental file backup of "DESKTOP-NOA"'},{l:0,t:'13:37:51',m:'Transferred 1.2 GB · 412s'},{l:0,t:'13:37:51',m:'Backup succeeded'}],
+      299:[{l:0,t:'12:44:00',m:'Starting full image backup of /dev/sda2'},{l:1,t:'13:50:11',m:'Warning: bad blocks detected on source, retried'},{l:1,t:'14:02:33',m:'Warning: snapshot pressure high'},{l:2,t:'14:09:40',m:'Error: write timeout on storage volume, segment requeued'},{l:0,t:'14:10:55',m:'Image backup completed after retry · 171 GB'}],
+      298:[{l:0,t:'02:00:00',m:'Starting incremental file backup of "MACBOOK-LEE"'},{l:1,t:'02:12:09',m:'Warning: 2 files changed during read'},{l:1,t:'02:14:48',m:'Warning: APFS local snapshot delete failed'},{l:0,t:'02:15:02',m:'Backup succeeded with warnings'}],
+      297:[{l:2,t:'04:00:00',m:'Error: client not reachable (timeout)'},{l:2,t:'04:00:30',m:'Error: ident not found'},{l:2,t:'04:01:00',m:'Error: backup aborted'}],
+      296:[{l:0,t:'01:00:00',m:'Starting full image backup'},{l:0,t:'02:22:10',m:'Image backup completed · 218 GB'}],
+    };
+    const usage=[
+      {name:'DB-MAIN',files:12*GB,images:220*GB},
+      {name:'DESKTOP-NOA',files:31*GB,images:180*GB},
+      {name:'MACBOOK-LEE',files:64*GB,images:0},
+      {name:'WEB-PROD-01',files:48*GB,images:0},
+      {name:'FINANCE-PC',files:2*GB,images:0},
+      {name:'KIOSK-03',files:0.5*GB,images:0},
+    ];
+    const users=[
+      {name:'admin',rights:['all'],super:true},
+      {name:'noa',rights:['status','browse_backups','logs'],super:false},
+      {name:'backup-bot',rights:['start_backup','status'],super:false},
+    ];
+    this.livelogSeed=[
+      {l:0,t:'14:21:02',m:'reading "/var/www/html/uploads/2026"'},
+      {l:0,t:'14:21:03',m:'hashed 1,204 files (62 MB/s)'},
+      {l:1,t:'14:21:05',m:'skip locked: session.lock'},
+      {l:0,t:'14:21:06',m:'transferred chunk #4821'},
+      {l:0,t:'14:21:07',m:'reading "/var/www/html/uploads/avatars"'},
+      {l:0,t:'14:21:08',m:'queue depth 3'},
+    ];
+    this.state={
+      authed:false,
+      loginErr:null,
+      view: this.props.startView || 'dashboard',
+      clients, progress, lastacts, bk, logs, usage, users,
+      bkClient:null, browsePath:null, browseBackupid:null, fileList:[],
+      selectedLog:301,
+      livelog:this.livelogSeed.slice(),
+      restoreItems:[],
+      gateEnabled:true,
+      gateTimeout: this.props.gateTimeout || 90,
+      gate:{open:false},
+    };
+    this.tick=0;
+  }
+
+  componentDidMount(){
+    if(this.DEMO){
+      this._sim=setInterval(()=>this.simulate(),1500);
+      this._live=setInterval(()=>this.streamLive(),2200);
+      return;
+    }
+    // 실서버: 저장된 세션이 있으면 status 한 번 찔러 유효성 확인 후 자동 입장.
+    if(this._ses){
+      this.api('status').then(d=>{
+        if(d && d.error!==1){ this.setState({authed:true}); this.loadAll(); this.startPolling(); }
+      }).catch(()=>{});
+    }
+  }
+  componentWillUnmount(){clearInterval(this._sim);clearInterval(this._live);clearInterval(this._gateTimer);clearInterval(this._poll);clearInterval(this._liveTimer);}
+
+  // ===== live API: polling lifecycle =====
+  startPolling(){
+    clearInterval(this._poll);
+    this._poll=setInterval(()=>{ this.loadStatus(); this.loadProgress(); }, 3000);
+  }
+  toLogin(){ this._ses=null; this._rights=null; try{localStorage.removeItem('nb_ses');}catch(e){}
+    clearInterval(this._poll); clearInterval(this._liveTimer);
+    this.setState({authed:false}); }
+  hasRight(domain){ const v=this._rights&&this._rights[domain]; return !!(v&&v!=='none'); }
+
+  // ===== live API: data loaders =====
+  async loadAll(){
+    if(!this.DEMO){
+      // 실서버 진입: 데모 잔재 제거(클라이언트 목록과 불일치 방지)
+      this.logBodies={};
+      this.setState({clients:[],progress:[],lastacts:[],bk:{},logs:[],usage:[],users:[],restoreItems:[]});
+    }
+    await Promise.all([this.loadStatus(),this.loadProgress(),this.loadLastacts(),this.loadLogs(),this.loadUsage()]);
+  }
+
+  async loadStatus(){
+    if(this.DEMO) return;
+    try{
+      const d=await this.api('status');
+      if(d.error===1) return this.toLogin();
+      if(!Array.isArray(d.status)) return;
+      const clients=d.status.filter(c=>c.id!=='-'&&c.id!=null).map(c=>({
+        id:+c.id, name:c.name, os:c.os_simple||'', osv:c.os_version_string||'', cv:c.client_version_string||'',
+        ip:c.ip||'-', online:!!c.online, lastbackup:+c.lastbackup||0, lastimage:+c.lastbackup_image||0,
+        issues:+c.last_filebackup_issues||0, status:+c.status||0, nopath:!!c.no_backup_paths }));
+      this.setState({clients});
+    }catch(e){}
+  }
+
+  async loadProgress(){
+    if(this.DEMO) return;
+    try{
+      const d=await this.api('progress');
+      if(d.error===1) return this.toLogin();
+      const progress=(d.progress||[]).map(p=>({
+        name:p.name, clientid:+p.clientid, action:+p.action, pcdone:+p.pcdone||0, queue:+p.queue||0,
+        id:+p.id, logid:+p.logid||0, details:p.details||'', total_bytes:+p.total_bytes||0,
+        done_bytes:+p.done_bytes||0, eta_ms:+p.eta_ms||0, speed_bpms:+p.speed_bpms||0,
+        paused:!!p.paused, can_stop_backup:!!p.can_stop_backup }));
+      const st={progress};
+      if(Array.isArray(d.lastacts)) st.lastacts=this._mapLastacts(d.lastacts);
+      this.setState(st);
+    }catch(e){}
+  }
+
+  _mapLastacts(arr){ return arr.map(a=>({
+    id:+a.id, clientid:+a.clientid, name:a.name, backuptime:+a.backuptime, incremental:+a.incremental||0,
+    duration:+a.duration||0, size_bytes:+a.size_bytes, image:+a.image||0, del:!!a.del,
+    restore:+a.restore||0, details:a.details||'' })); }
+
+  async loadLastacts(){
+    if(this.DEMO) return;
+    try{ const d=await this.api('lastacts'); if(d.error===1) return this.toLogin();
+      if(Array.isArray(d.lastacts)) this.setState({lastacts:this._mapLastacts(d.lastacts)}); }catch(e){}
+  }
+
+  async loadLogs(){
+    if(this.DEMO) return;
+    try{ const d=await this.api('logs'); if(d.error===1) return this.toLogin();
+      const logs=(d.logs||[]).map(l=>({id:+l.id,name:l.name,time:+l.time,errors:+l.errors||0,
+        warnings:+l.warnings||0,image:+l.image||0,incremental:+l.incremental||0}));
+      this.setState({logs}); if(logs.length) this.loadLogBody(logs[0].id,true);
+    }catch(e){}
+  }
+
+  async loadLogBody(logid,select){
+    if(this.DEMO){ if(select) this.setState({selectedLog:logid}); return; }
+    try{ const d=await this.api('logs',{logid:String(logid)});
+      if(d.error===1) return this.toLogin();
+      if(d.log){ const body=this._parseLogBody(d.log.data);
+        this.logBodies={...this.logBodies,[logid]:body}; }
+      this.setState({selectedLog:logid});
+    }catch(e){}
+  }
+
+  // 로그 본문은 "레벨-시각-메시지" 형태로 인코딩됨. 줄 단위로 관대하게 파싱.
+  _parseLogBody(data){
+    if(!data) return [];
+    return String(data).split('\n').filter(Boolean).map(line=>{
+      const m=line.match(/^(\d)-(\d+)-(.*)$/);
+      if(m){ const lvl=+m[1]; const ts=new Date(+m[2]*1000);
+        const t=String(ts.getHours()).padStart(2,'0')+':'+String(ts.getMinutes()).padStart(2,'0')+':'+String(ts.getSeconds()).padStart(2,'0');
+        return {l:lvl>=2?2:lvl, t, m:m[3]}; }
+      return {l:0,t:'',m:line};
+    });
+  }
+
+  async loadUsage(){
+    if(this.DEMO) return;
+    try{ const d=await this.api('usage'); if(d.error===1) return this.toLogin();
+      if(Array.isArray(d.usage)){ const usage=d.usage.map(u=>({name:u.name,
+        files:+u.files||+u.used||0, images:+u.images||0})); this.setState({usage}); }
+    }catch(e){}
+  }
+
+  // ---- demo simulation: advance running backups ----
+  simulate(){
+    if(!this.state.authed) return;
+    const procs=this.state.progress.map(p=>({...p}));
+    let clients=this.state.clients.map(c=>({...c}));
+    let lastacts=this.state.lastacts;
+    const remaining=[];
+    procs.forEach(p=>{
+      p.pcdone=Math.min(100,p.pcdone+Math.round(2+Math.random()*4));
+      p.done_bytes=Math.round(p.total_bytes*p.pcdone/100);
+      p.eta_ms=Math.max(0,Math.round(p.total_bytes*(1-p.pcdone/100)/Math.max(1,p.speed_bpms)));
+      p.speed_bpms=Math.round(p.speed_bpms*(0.9+Math.random()*0.25));
+      if(p.pcdone>=100){
+        clients=clients.map(c=>c.id===p.clientid?{...c,status:0,lastbackup:this.now,lastimage:(p.action>=3?this.now:c.lastimage)}:c);
+        lastacts=[{id:9000+this.tick++,clientid:p.clientid,name:p.name,backuptime:this.now,incremental:(p.action%2===1?1:0),duration:300+Math.round(Math.random()*600),size_bytes:p.total_bytes,image:(p.action>=3?1:0),del:false,details:p.details.split(' ')[0]},...lastacts].slice(0,12);
+      } else { remaining.push(p); }
+    });
+    this.setState({progress:remaining,clients,lastacts});
+  }
+  streamLive(){
+    if(!this.state.authed||this.state.progress.length===0) return;
+    const tpl=['reading "/var/www/html/...', 'hashed %n files', 'transferred chunk #%c', 'queue depth %q','delta-compressed block'];
+    const now=new Date();
+    const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+    const msgs=['reading "/var/www/html/uploads"','hashed '+(800+Math.round(Math.random()*900))+' files','transferred chunk #'+(4800+this.tick),'delta-compressed 18 blocks','queue depth '+(1+Math.round(Math.random()*4))];
+    const line={l:(Math.random()<0.12?1:0),t,m:msgs[Math.floor(Math.random()*msgs.length)]};
+    this.setState(s=>({livelog:[...s.livelog.slice(-40),line]}));
+  }
+
+  // ---- real API wrapper (used when not in demo / wired to live server) ----
+  async api(action, params={}, timeoutMs=20000){
+    const body=new URLSearchParams(params);
+    if(this._ses) body.set('ses',this._ses);
+    const res=await fetch(`/x?a=${action}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded; charset=utf-8'},body,signal:AbortSignal.timeout(timeoutMs)});
+    return res.json();
+  }
+
+  // ---- auth: salt -> hash -> login (2-step challenge/response) ----
+  onLoginKey(e){ if(e && e.key==='Enter') this.doLogin(); }
+  login(){ if(this.DEMO){ this.setState({authed:true}); return; } this.doLogin(); }
+
+  hashPassword(password, salt, rnd, rounds){
+    const CJS=window.CryptoJS;
+    if(!CJS) throw new Error('crypto-js 미로드');
+    let pwmd5;
+    if(rounds>0){
+      pwmd5=CJS.PBKDF2(password, CJS.enc.Hex.parse(salt),
+        {keySize:256/32, iterations:rounds, hasher:CJS.algo.SHA256}).toString();
+    }else{
+      pwmd5=CJS.MD5(salt+password).toString();
+    }
+    return CJS.MD5(rnd+pwmd5).toString();
+  }
+
+  async doLogin(){
+    const u=(document.getElementById('nb_user')||{}).value||'';
+    const p=(document.getElementById('nb_pass')||{}).value||'';
+    this.setState({loginErr:null});
+    // 사용자/비번이 모두 비어 있으면 익명 로그인 시도 (등록된 웹 사용자가 없는 서버)
+    if(!u && !p){
+      try{
+        this._ses='';
+        const r=await this.api('login',{});
+        if(r.success){
+          if(r.session) this._ses=r.session;
+          this._rights=r;
+          try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
+          this.setState({authed:true, loginErr:null});
+          await this.loadAll(); this.startPolling();
+          return;
+        }
+        if(r.admin_only||r.error===1){ this.setState({loginErr:'사용자명과 비밀번호를 입력하세요'}); return; }
+      }catch(e){ this.setState({loginErr:'서버에 연결할 수 없습니다 (같은 출처로 서빙되었는지 확인)'}); return; }
+    }
+    if(!u){ this.setState({loginErr:'사용자명을 입력하세요'}); return; }
+    try{
+      // 1) salt + 세션 + 챌린지
+      const s=await this.api('salt',{username:u});
+      if(s.error===3) return this.setState({loginErr:'잠시 후 다시 시도하세요 (rate limit)'});
+      if(s.error===1) return this.setState({loginErr:'세션 생성 실패'});
+      if(s.ses) this._ses=s.ses;
+      // 2) 비밀번호 해시
+      const password_field=this.hashPassword(p, s.salt||'', s.rnd||'', +s.pbkdf2_rounds||0);
+      // 3) login
+      const r=await this.api('login',{username:u, password:password_field});
+      if(r.success){
+        if(r.session) this._ses=r.session;
+        this._rights=r;
+        try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
+        this.setState({authed:true, loginErr:null});
+        await this.loadAll();
+        this.startPolling();
+      }else if(r.error===2){
+        this.setState({loginErr:'사용자명 또는 비밀번호가 틀립니다'});
+      }else if(r.error===1){
+        this.setState({loginErr:'아직 사용자가 없습니다 (초기 설정 필요)'});
+      }else if(r.ldap_enabled){
+        // LDAP: 평문 전송 경로
+        const r2=await this.api('login',{username:u, password:p, plainpw:'1'});
+        if(r2.success){ if(r2.session) this._ses=r2.session; this._rights=r2;
+          try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
+          this.setState({authed:true, loginErr:null}); await this.loadAll(); this.startPolling();
+        }else this.setState({loginErr:'LDAP 인증 실패'});
+      }else{
+        this.setState({loginErr:'로그인할 수 없습니다'});
+      }
+    }catch(e){
+      this.setState({loginErr:'서버에 연결할 수 없습니다 (같은 출처로 서빙되었는지 확인)'});
+    }
+  }
+
+  async logout(){
+    if(!this.DEMO){ this.toLogin(); return; }
+    this.setState({authed:false});
+  }
+
+  // ---- helpers ----
+  fmtBytes(n){if(n<0)return '—';const u=['B','KB','MB','GB','TB'];let i=0,v=n;while(v>=1024&&i<u.length-1){v/=1024;i++;}return (v>=100||i===0?Math.round(v):v.toFixed(1))+' '+u[i];}
+  rel(ts){if(!ts)return '없음';const d=this.now-ts;if(d<60)return '방금';if(d<3600)return Math.floor(d/60)+'분 전';if(d<86400)return Math.floor(d/3600)+'시간 전';return Math.floor(d/86400)+'일 전';}
+  abs(ts){if(!ts)return '—';const d=new Date(ts*1000);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+  dur(s){if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+(s%60)+'s';return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';}
+  osIcon(os){return os==='windows'?'ph ph-windows-logo':os==='linux'?'ph ph-linux-logo':os==='osx'?'ph ph-apple-logo':'ph ph-desktop';}
+  statusInfo(code){
+    if(code===0)return {label:'유휴',color:'#5b6677'};
+    if(code>=1&&code<=7)return {label:this.actionLabels[code],color:'#4d8dff'};
+    if(code===8||code===9)return {label:this.actionLabels[code],color:'#a78bfa'};
+    if(code===11||code===13||code===16)return {label:this.actionLabels[code],color:'#e5484d'};
+    return {label:this.actionLabels[code]||'동작 중',color:'#f5a524'};
+  }
+  randhex(n){let s='';const c='0123456789abcdef';for(let i=0;i<n;i++)s+=c[Math.floor(Math.random()*16)];return s;}
+
+  setView(v){this.setState({view:v,bkClient:null,browsePath:null});}
+
+  startBackup(id,type){
+    if(!this.DEMO){
+      this.setState({view:'progress'});
+      this.api('start_backup',{start_client:String(id), start_type:type})
+        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); this.loadStatus(); })
+        .catch(()=>{});
+      return;
+    }
+    const map={incr_file:{action:1},full_file:{action:2},incr_image:{action:3},full_image:{action:4}};
+    const a=map[type].action;
+    const c=this.state.clients.find(x=>x.id===id);
+    if(!c||!c.online) return;
+    if(this.state.progress.some(p=>p.clientid===id)) return;
+    const clients=this.state.clients.map(x=>x.id===id?{...x,status:a}:x);
+    const proc={name:c.name,clientid:id,action:a,pcdone:0,queue:0,id:9000+this.tick++,logid:0,details:c.os==='windows'?'C:\\Users':'/home',total_bytes:(2+Math.random()*40)*this.U.GB,done_bytes:0,eta_ms:600000,speed_bpms:40000+Math.random()*40000,paused:false,can_stop_backup:true};
+    this.setState({clients,progress:[...this.state.progress,proc],view:'progress'});
+  }
+  stopProc(pid){
+    if(!this.DEMO){
+      const p=this.state.progress.find(x=>x.id===pid);
+      if(!p) return;
+      this.api('progress',{stop_clientid:String(p.clientid), stop_id:String(pid)})
+        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); }).catch(()=>{});
+      return;
+    }
+    this.setState(s=>{const p=s.progress.find(x=>x.id===pid);const clients=p?s.clients.map(c=>c.id===p.clientid?{...c,status:0}:c):s.clients;return {progress:s.progress.filter(x=>x.id!==pid),clients};});
+  }
+
+  openBackupsFor(id){
+    this.setState({view:'backups',bkClient:id,browsePath:null});
+    if(!this.DEMO) this.loadBackups(id);
+  }
+  backToPick(){this.setState({bkClient:null,browsePath:null,fileList:[]});}
+
+  // ---- file browsing & download ----
+  browseTo(backupid, path){
+    this.setState({browsePath:path, browseBackupid:backupid});
+    if(this.DEMO) return;
+    this.loadFiles(this.state.bkClient, backupid, path);
+  }
+  async loadFiles(clientid, backupid, path){
+    try{
+      const d=await this.api('backups',{sa:'files', clientid:String(clientid), backupid:String(backupid), path});
+      if(d.error===1) return this.toLogin();
+      if(d.err){ this.setState({fileList:[]}); return; }
+      const fileList=(d.files||[]).map(f=>({name:f.name, dir:!!f.dir,
+        size:+f.size||0, mod:+f.mod||0 }));
+      this.setState({fileList});
+    }catch(e){ this.setState({fileList:[]}); }
+  }
+  fileHref(clientid, backupid, path){
+    const q=new URLSearchParams({sa:'filesdl', clientid:String(clientid), backupid:String(backupid), path});
+    if(this._ses) q.set('ses', this._ses);
+    return `/x?a=backups&${q.toString()}`;
+  }
+  zipHref(clientid, backupid, path){
+    const q=new URLSearchParams({sa:'zipdl', clientid:String(clientid), backupid:String(backupid), path});
+    if(this._ses) q.set('ses', this._ses);
+    return `/x?a=backups&${q.toString()}`;
+  }
+  downloadFile(clientid, backupid, path){
+    const a=document.createElement('a'); a.href=this.fileHref(clientid,backupid,path);
+    a.download=''; document.body.appendChild(a); a.click(); a.remove();
+  }
+  downloadZip(){
+    if(this.DEMO) return;
+    const cid=this.state.bkClient, bid=this.state.browseBackupid, path=this.state.browsePath||'/';
+    if(bid==null) return;
+    const a=document.createElement('a'); a.href=this.zipHref(cid,bid,path);
+    a.download=''; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  async loadBackups(clientid){
+    if(this.DEMO) return;
+    try{
+      const d=await this.api('backups',{sa:'backups', clientid:String(clientid)});
+      if(d.error===1) return this.toLogin();
+      const map=b=>({id:+b.id, backuptime:+b.backuptime, incremental:+b.incremental||0,
+        size_bytes:+b.size_bytes, archived:+b.archived||0, letter:b.letter, delete_pending:!!b.delete_pending});
+      const cl={fileBackups:(d.backups||[]).map(map), imageBackups:(d.backup_images||[]).map(map)};
+      this.setState(s=>({bk:{...s.bk,[clientid]:cl}}));
+    }catch(e){}
+  }
+
+  toggleArchive(cid,bid){
+    if(!this.DEMO){
+      const cur=((this.state.bk[cid]||{}).fileBackups||[]).find(b=>b.id===bid);
+      const key=cur&&cur.archived?'unarchive':'archive';
+      this.api('backups',{sa:'backups', clientid:String(cid), [key]:String(bid)})
+        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
+      return;
+    }
+    this.setState(s=>{const bk={...s.bk};const cl={...bk[cid]};cl.fileBackups=cl.fileBackups.map(b=>b.id===bid?{...b,archived:b.archived?0:1}:b);bk[cid]=cl;return {bk};});
+  }
+  schedDelete(cid,bid){
+    if(!this.DEMO){
+      this.api('backups',{sa:'backups', clientid:String(cid), delete:String(bid)})
+        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
+      return;
+    }
+    this.setState(s=>{const bk={...s.bk};const cl={...bk[cid]};cl.fileBackups=cl.fileBackups.map(b=>b.id===bid?{...b,delete_pending:true}:b);bk[cid]=cl;return {bk};});
+  }
+
+  // ---- the physical gate ----
+  openGate(cid,backup,kind){
+    // deleteId: file backup positive, image negative. gated only when file AND gate enabled.
+    const deleteId = kind==='image' ? -backup.id : backup.id;
+    const gated = deleteId>0 && this.state.gateEnabled;
+    clearInterval(this._gateTimer);
+    if(gated){
+      const total=this.state.gateTimeout;
+      this.setState({gate:{open:true,phase:'awaiting',cid,bid:backup.id,kind,total,remaining:total}});
+      // 표시용 카운트다운 (서버 timeout 추정치). 0이 돼도 실패 단정 금지 — 서버 응답을 기다린다.
+      this._gateTimer=setInterval(()=>{
+        this.setState(s=>{
+          if(!s.gate.open||s.gate.phase!=='awaiting')return {};
+          const r=s.gate.remaining-1;
+          if(r<=0){ if(this.DEMO){clearInterval(this._gateTimer);return {gate:{...s.gate,remaining:0,phase:'timeout'}};}
+            return {gate:{...s.gate,remaining:0}}; }
+          return {gate:{...s.gate,remaining:r}};
+        });
+      },1000);
+      // 실서버: 서버가 GPIO 버튼/타임아웃까지 응답을 붙잡는다. ~90s+여유로 310s.
+      if(!this.DEMO){
+        this._gateAbort=new AbortController();
+        this.api('backups',{sa:'backups', clientid:String(cid), delete_now:String(deleteId)}, 310000)
+          .then(d=>{
+            clearInterval(this._gateTimer);
+            if(d && d.error===1) return this.toLogin();
+            if(d && d.delete_now_err==='physical_confirmation_timeout')
+              return this.setState(s=>({gate:{...s.gate,phase:'timeout'}}));
+            if(d && d.delete_now_err==='delete_file_backup_failed')
+              return this.setState(s=>({gate:{...s.gate,phase:'failed'}}));
+            // 에러 키 없음 = 승인됨 → 삭제 완료
+            this.setState(s=>({gate:{...s.gate,phase:'approved'}}));
+            setTimeout(()=>{ this.setState(s=>({gate:{...s.gate,phase:'deleted'}})); this.loadBackups(cid); }, 1300);
+          })
+          .catch(()=>{ clearInterval(this._gateTimer);
+            this.setState(s=>(s.gate&&s.gate.open?{gate:{...s.gate,phase:'failed'}}:{})); });
+      }
+    } else {
+      this.setState({gate:{open:true,phase:'confirm',cid,bid:backup.id,kind,deleteId,note:(deleteId<0?'이미지 백업은 게이트 미적용':'게이트 비활성 — 즉시 삭제')}});
+    }
+  }
+  // 데모 전용: 화면의 '버튼 누르기' (실서버에선 GPIO가 대신함, 이 핸들러는 호출 안 됨)
+  gatePress(){
+    if(!this.DEMO) return;
+    clearInterval(this._gateTimer);
+    this.setState(s=>({gate:{...s.gate,phase:'approved'}}));
+    setTimeout(()=>this.commitDelete(),1300);
+  }
+  confirmUngated(){
+    const g=this.state.gate;
+    if(!this.DEMO && g && g.deleteId!=null){
+      // 게이트 미적용 경로(이미지 삭제/게이트 비활성)도 실제 삭제 요청
+      this.api('backups',{sa:'backups', clientid:String(g.cid), delete_now:String(g.deleteId)})
+        .then(d=>{ if(d&&d.error===1) return this.toLogin(); this.loadBackups(g.cid); }).catch(()=>{});
+      this.setState({gate:{open:false}});
+      return;
+    }
+    this.commitDelete(true);
+  }
+  commitDelete(immediate){
+    this.setState(s=>{
+      const bk={...s.bk};const cl={...bk[s.gate.cid]};
+      if(s.gate.kind==='image') cl.imageBackups=(cl.imageBackups||[]).filter(b=>b.id!==s.gate.bid);
+      else cl.fileBackups=(cl.fileBackups||[]).filter(b=>b.id!==s.gate.bid);
+      bk[s.gate.cid]=cl;
+      return {bk, gate: immediate? {open:false} : {...s.gate,phase:'deleted'}};
+    });
+  }
+  closeGate(){clearInterval(this._gateTimer); if(this._gateAbort){try{this._gateAbort.abort();}catch(e){} this._gateAbort=null;} this.setState({gate:{open:false}});}
+
+  issueImageToken(cid,b){
+    if(!this.DEMO){
+      const c=this.state.clients.find(x=>x.id===cid);
+      this.api('restore_image',{backupid:String(b.id)}).then(d=>{
+        if(d&&d.error===1) return this.toLogin();
+        if(d&&d.ok){ const item={type:'token',client:c?c.name:'',letter:b.letter,token:d.token,authkey:d.authkey,time:Date.now()};
+          this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'})); }
+      }).catch(()=>{});
+      return;
+    }
+    const c=this.state.clients.find(x=>x.id===cid);
+    const item={type:'token',client:c.name,letter:b.letter,token:this.randhex(40),authkey:this.randhex(24),time:Date.now()};
+    this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'}));
+  }
+  restoreFolderToClient(){
+    const cid=this.state.bkClient;
+    const c=this.state.clients.find(x=>x.id===cid);
+    const path=this.state.browsePath||'/';
+    if(!this.DEMO){
+      const bks=(this.state.bk[cid]||{}).fileBackups||[];
+      const backupid=bks.length?bks[0].id:null; // 최신 파일 백업
+      if(backupid==null) return;
+      const item={type:'wait',client:c?c.name:'',path,key:'…',status:'준비 중'};
+      this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'}));
+      this.api('backups',{sa:'clientdl', clientid:String(cid), backupid:String(backupid), path})
+        .then(d=>{
+          if(d&&d.error===1) return this.toLogin();
+          this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,
+            key:d&&d.wait_key?d.wait_key:'-',
+            status:(d&&d.ok)?'복원 전송 중':(d&&d.err?('오류: '+d.err):'실패')}:r)}));
+        }).catch(()=>{ this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,status:'요청 실패'}:r)})); });
+      return;
+    }
+    const item={type:'wait',client:c?c.name:'',path,key:this.randhex(16),status:'준비 중'};
+    this.setState(s=>({restoreItems:[item,...s.restoreItems]}));
+    setTimeout(()=>this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,status:'복원 전송 중'}:r)})),2200);
+  }
+
+  // ===================== RENDER =====================
+  renderVals(){
+    const S=this.state, U=this.U;
+    const ac=this.props.accentColor||'#3ddc84';
+    const glow=(this.props.enableGlow!==false)?`0 0 22px ${ac}55`:'none';
+    const rootStyle=`--ac:${ac};--glow:${glow};`;
+    const view=S.view;
+    const v={dashboard:view==='dashboard',progress:view==='progress',lastacts:view==='lastacts',backups:view==='backups',restore:view==='restore',logs:view==='logs',stats:view==='stats',settings:view==='settings',users:view==='users'};
+
+    const titles={dashboard:['대시보드','클라이언트 상태 개요'],progress:['진행 상황','실행 중인 백업과 라이브 로그'],lastacts:['최근 활동','완료된 백업 · 복원 이력'],backups:['백업','조회 · 파일 탐색 · 다운로드'],restore:['복원','이미지 토큰 · 파일 복원'],logs:['로그','백업 로그 뷰어'],stats:['통계','저장소 사용량'],settings:['설정','Ransom Defender 구성'],users:['사용자','계정 · 권한 관리']};
+    const navDef=[['dashboard','대시보드','ph ph-gauge'],['progress','진행 상황','ph ph-activity'],['lastacts','최근 활동','ph ph-clock-counter-clockwise'],['backups','백업','ph ph-folders'],['restore','복원','ph ph-clock-clockwise'],['logs','로그','ph ph-list-magnifying-glass'],['stats','통계','ph ph-chart-pie-slice'],['settings','설정','ph ph-gear-six'],['users','사용자','ph ph-users-three']];
+    const runningCount=S.progress.length;
+    const nav=navDef.map(([key,label,icon])=>{
+      const active=view===key;
+      return {key,label,icon,go:()=>this.setView(key),
+        style:`display:flex;align-items:center;gap:11px;padding:9px 11px;border:none;border-radius:9px;cursor:pointer;font-size:13px;font-weight:${active?'600':'500'};text-align:left;background:${active?'color-mix(in srgb,'+ac+',transparent 88%)':'transparent'};color:${active?ac:'#97a1b2'}`,
+        badge:(key==='progress'&&runningCount)?runningCount:null,
+        badgeStyle:`font-size:10.5px;font-family:'IBM Plex Mono',monospace;background:#4d8dff;color:#06210f;border-radius:10px;padding:1px 7px;font-weight:600`};
+    });
+
+    // clients
+    const clients=S.clients.map(c=>{
+      const si=this.statusInfo(c.status);
+      const active=c.status>=1&&c.status<=9;
+      const proc=S.progress.find(p=>p.clientid===c.id);
+      const pcdone=proc?proc.pcdone:0;
+      const warn=!c.online||c.issues>0||c.nopath;
+      return {...c,osIcon:this.osIcon(c.os),client_version_string:c.cv,
+        dot:c.online?ac:'#5b6677',
+        statusLabel:c.nopath?'백업 경로 미설정':si.label, statusColor:c.nopath?'#f5a524':si.color,
+        lastFileRel:c.lastbackup?this.rel(c.lastbackup):'없음', lastImgRel:c.lastimage?this.rel(c.lastimage):'없음',
+        hasIssues:c.issues>0, active, pcdone, pcWidth:pcdone+'%',
+        cardStyle:`background:#11151c;border:1px solid ${warn?'color-mix(in srgb,#f5a524,transparent 78%)':'#1b2230'};border-radius:13px;padding:16px 18px`,
+        onBackup:()=>this.startBackup(c.id,'incr_file'), onBrowse:()=>this.openBackupsFor(c.id)};
+    });
+    const counts={total:S.clients.length,online:S.clients.filter(c=>c.online).length,running:runningCount,warn:S.clients.filter(c=>!c.online||c.issues>0||c.nopath).length};
+
+    // progress
+    const procs=S.progress.map(p=>{
+      const c=S.clients.find(x=>x.id===p.clientid)||{};
+      return {...p,osIcon:this.osIcon(c.os),actionLabel:this.actionLabels[p.action],pcWidth:p.pcdone+'%',
+        speedText:this.fmtBytes(p.speed_bpms*1000)+'/s', etaText:p.eta_ms?Math.ceil(p.eta_ms/60000)+'분':'—',
+        doneText:this.fmtBytes(p.done_bytes), totalText:this.fmtBytes(p.total_bytes),
+        onStop:()=>this.stopProc(p.id)};
+    });
+    const livelog=S.livelog.map(l=>({t:l.t,msg:l.m,style:`color:${l.l===2?'#e5484d':l.l===1?'#f5a524':'#9fb0c4'}`}));
+
+    // lastacts
+    const acts=S.lastacts.map(a=>{
+      const icon=a.del?'ph ph-trash':a.restore?'ph ph-arrow-u-up-left':a.image?'ph ph-hard-drives':'ph ph-files';
+      const iconColor=a.del?'#5b6677':a.image?'#4d8dff':ac;
+      const typeLabel=a.del?'삭제(retention)':a.image?'이미지':(a.incremental?'증분 파일':'전체 파일');
+      return {...a,icon,iconColor,typeLabel,timeRel:this.rel(a.backuptime),durText:a.del?'—':this.dur(a.duration),sizeText:this.fmtBytes(a.size_bytes)};
+    });
+
+    // backups view
+    const bkPick=view==='backups'&&!S.bkClient;
+    const bkList=view==='backups'&&!!S.bkClient;
+    const sel=S.bkClient?{...S.clients.find(c=>c.id===S.bkClient),osIcon:this.osIcon((S.clients.find(c=>c.id===S.bkClient)||{}).os)}:{};
+    const cur=S.bkClient?(S.bk[S.bkClient]||{fileBackups:[],imageBackups:[]}):{fileBackups:[],imageBackups:[]};
+    const stateBadge=(b)=>{
+      if(b.delete_pending)return '⏳ 삭제 예약';
+      if(b.archived)return '★ 보관됨';
+      return '—';
+    };
+    const fileBackups=cur.fileBackups.map(b=>({...b,timeAbs:this.abs(b.backuptime),typeLabel:b.incremental?'증분':'전체',sizeText:this.fmtBytes(b.size_bytes),
+      stateBadge:stateBadge(b),
+      archIcon:b.archived?'ph-fill ph-star':'ph ph-star',
+      archStyle:`border:1px solid ${b.archived?'color-mix(in srgb,#f5a524,transparent 55%)':'#232b38'};background:${b.archived?'color-mix(in srgb,#f5a524,transparent 88%)':'#161b24'};color:${b.archived?'#f5a524':'#97a1b2'};border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer`,
+      onBrowse:()=>this.browseTo(b.id,'/'),
+      onArchive:()=>this.toggleArchive(S.bkClient,b.id),
+      onDelete:()=>this.schedDelete(S.bkClient,b.id),
+      onDeleteNow:()=>this.openGate(S.bkClient,b,'file')}));
+    const imageBackups=cur.imageBackups.map(b=>({...b,timeAbs:this.abs(b.backuptime),typeLabel:b.incremental?'증분':'전체',sizeText:this.fmtBytes(b.size_bytes),
+      stateBadge:stateBadge(b),
+      onRestore:()=>this.issueImageToken(S.bkClient,b),
+      onDeleteNow:()=>this.openGate(S.bkClient,b,'image')}));
+    const browsing=bkList&&S.browsePath!=null;
+    let crumbs=[],files=[];
+    if(browsing){
+      const path=S.browsePath;
+      const bid=S.browseBackupid;
+      const parts=path==='/'?[]:path.split('/').filter(Boolean);
+      crumbs=[{label:sel.name,color:ac,go:()=>this.browseTo(bid,'/')}];
+      let acc='';
+      parts.forEach((p,i)=>{acc+='/'+p;const pth=acc;crumbs.push({label:p,color:i===parts.length-1?'#cfd6e1':'#97a1b2',go:()=>this.browseTo(bid,pth)});});
+      const list=this.DEMO?(this.tree[path]||[]):(S.fileList||[]);
+      files=list.map(f=>{
+        const childPath=(path==='/'?'':path)+'/'+f.name;
+        return {name:f.name,icon:f.dir?'ph-fill ph-folder':'ph ph-file',iconColor:f.dir?'#f5a524':'#5b6677',
+          sizeText:f.dir?'—':this.fmtBytes(f.size),modText:f.mod?this.abs(f.mod):'—',cursor:f.dir?'pointer':'default',
+          onOpen:f.dir?()=>this.browseTo(bid,childPath):()=>{ if(!this.DEMO) this.downloadFile(S.bkClient,bid,childPath); },
+          dlHref:(!this.DEMO&&!f.dir)?this.fileHref(S.bkClient,bid,childPath):'',
+          action:f.dir?'':'다운로드'};
+      });
+    }
+
+    // restore items
+    const imageRestoreList=[];
+    Object.keys(S.bk).forEach(cid=>{(((S.bk[cid]||{}).imageBackups)||[]).forEach(b=>{const c=S.clients.find(x=>x.id===+cid);if(!c)return;imageRestoreList.push({...b,name:c.name,osIcon:this.osIcon(c.os),timeAbs:this.abs(b.backuptime),sizeText:this.fmtBytes(b.size_bytes),onIssue:()=>this.issueImageToken(+cid,b)});});});
+    const restoreItems=S.restoreItems.map(r=>{
+      if(r.type==='token')return {icon:'ph ph-key',color:ac,border:'color-mix(in srgb,'+ac+',transparent 65%)',title:'이미지 복원 토큰 발급됨',client:r.client+' · '+r.letter,rows:[{k:'token',v:r.token},{k:'authkey',v:r.authkey}]};
+      return {icon:'ph ph-arrow-u-up-left',color:'#4d8dff',border:'color-mix(in srgb,#4d8dff,transparent 65%)',title:'파일 복원 — '+r.status,client:r.client,rows:[{k:'경로',v:r.path},{k:'wait_key',v:r.key}]};
+    });
+
+    // logs
+    const logsList=S.logs.map(lg=>({...lg,icon:lg.image?'ph ph-hard-drives':'ph ph-files',iconColor:lg.errors?'#e5484d':lg.warnings?'#f5a524':ac,
+      timeRel:this.rel(lg.time),typeLabel:lg.image?'이미지':(lg.incremental?'증분':'전체'),hasErr:lg.errors>0,hasWarn:lg.errors===0&&lg.warnings>0,
+      onSelect:()=>{ if(this.DEMO) this.setState({selectedLog:lg.id}); else this.loadLogBody(lg.id,true); },
+      rowStyle:`display:flex;align-items:center;gap:11px;width:100%;border:none;border-bottom:1px solid #141923;cursor:pointer;padding:11px 16px;background:${S.selectedLog===lg.id?'#161b24':'transparent'}`}));
+    const selLog=S.logs.find(l=>l.id===S.selectedLog)||{};
+    const logBody=(this.logBodies[S.selectedLog]||[]).map(l=>({level:l.l===2?'ERR':l.l===1?'WRN':'INF',t:l.t,msg:l.m,
+      style:`color:${l.l===2?'#e5484d':l.l===1?'#f5a524':'#9fb0c4'}`,
+      tag:`color:${l.l===2?'#e5484d':l.l===1?'#f5a524':'#3c4452'};width:30px;flex-shrink:0`}));
+    const logTitle=selLog.name||'로그';
+    const logMeta=selLog.time?this.abs(selLog.time)+' · #'+selLog.id:'';
+
+    // stats
+    const maxUsed=Math.max(...S.usage.map(u=>u.files+u.images));
+    const usage=S.usage.map(u=>{const used=u.files+u.images;return {name:u.name,usedText:this.fmtBytes(used),fileW:(u.files/maxUsed*100)+'%',imgW:(u.images/maxUsed*100)+'%'};});
+    const totalAll=S.usage.reduce((a,u)=>a+u.files+u.images,0);
+    const pieColors=[ac,'#4d8dff','#a78bfa','#f5a524','#e5484d','#5b6677'];
+    let accP=0;const segs=[];const pieLegend=[];
+    S.usage.forEach((u,i)=>{const used=u.files+u.images;const pct=used/totalAll*100;const col=pieColors[i%pieColors.length];segs.push(`${col} ${accP}% ${accP+pct}%`);pieLegend.push({name:u.name,color:col,pct:pct.toFixed(0)+'%'});accP+=pct;});
+    const pieStyle=`conic-gradient(${segs.join(',')})`;
+    const totalUsed=this.fmtBytes(totalAll);
+
+    // settings
+    const generalSettings=[
+      {label:'백업 저장 경로',hint:'backupfolder',value:'/mnt/backups'},
+      {label:'증분 파일 백업 간격',hint:'update_freq_incr',value:'24h'},
+      {label:'전체 파일 백업 간격',hint:'update_freq_full',value:'30d'},
+      {label:'최대 동시 백업 수',hint:'max_active_clients',value:'4'},
+      {label:'보존 — 증분 최소 개수',hint:'min_file_incr',value:'40'},
+    ];
+    const gateToggleStyle=`width:46px;height:26px;border:none;border-radius:20px;cursor:pointer;position:relative;padding:0;background:${S.gateEnabled?ac:'#232b38'};transition:background .15s`;
+    const gateKnobStyle=`position:absolute;top:3px;left:${S.gateEnabled?'23px':'3px'};width:20px;height:20px;border-radius:50%;background:#06210f;transition:left .15s;display:block`;
+
+    // gate modal copy
+    const g=S.gate;
+    let gate={open:false};
+    if(g.open){
+      const ph=g.phase;
+      const map={
+        awaiting:{color:'#f5a524',icon:'ph ph-fingerprint',word:'PHYSICAL CONFIRMATION REQUIRED',head:'기기의 보호 버튼을 눌러 삭제를 승인하세요',sub:'NeoBackup Ransom Defender — 원격만으로는 백업을 삭제할 수 없습니다.',pulse:true},
+        approved:{color:ac,icon:'ph-fill ph-shield-check',word:'PHYSICAL BUTTON PRESSED',head:'물리 확인됨. 백업을 삭제합니다.',sub:'GPIO 17 falling-edge 감지 — 승인이 감사 로그에 기록되었습니다.',pulse:false},
+        deleted:{color:ac,icon:'ph-fill ph-check-circle',word:'DELETED',head:'백업을 삭제했습니다',sub:'요청이 정상적으로 커밋되었습니다.',pulse:false},
+        timeout:{color:'#8a93a3',icon:'ph ph-clock-countdown',word:'TIMEOUT — REQUEST DISCARDED',head:'시간 내 확인이 없어 삭제를 취소했습니다',sub:'백업은 안전하게 보존됩니다. physical_confirmation_timeout',pulse:false},
+        failed:{color:'#e5484d',icon:'ph ph-x-circle',word:'DELETE FAILED',head:'삭제에 실패했습니다',sub:'delete_file_backup_failed — 저장소 상태를 확인하세요.',pulse:false},
+        confirm:{color:'#e5484d',icon:'ph ph-warning',word:'NO GATE',head:'즉시 삭제하시겠습니까?',sub:(g.note||'')+' — 이 작업은 물리 확인 없이 바로 실행됩니다.',pulse:false},
+      };
+      const m=map[ph]||map.awaiting;
+      const circ=2*Math.PI*46;
+      const off=circ*(1-(g.remaining||0)/(g.total||1));
+      const ring=React.createElement('svg',{width:104,height:104,viewBox:'0 0 104 104',style:{transform:'rotate(-90deg)'}},
+        React.createElement('circle',{cx:52,cy:52,r:46,fill:'none',stroke:'#1b2230',strokeWidth:6}),
+        React.createElement('circle',{cx:52,cy:52,r:46,fill:'none',stroke:m.color,strokeWidth:6,strokeLinecap:'round',strokeDasharray:circ,strokeDashoffset:off,style:{transition:'stroke-dashoffset 1s linear'}}));
+      gate={open:true,phase:ph,color:m.color,icon:m.icon,word:m.word,head:m.head,sub:m.sub,pulse:m.pulse,
+        border:'color-mix(in srgb,'+m.color+',transparent 60%)',
+        remaining:g.remaining,ring,
+        showCountdown:ph==='awaiting',showDevice:ph==='awaiting',showConfirm:ph==='confirm',
+        showCancel:ph==='awaiting',showClose:ph==='approved'||ph==='deleted'||ph==='timeout'||ph==='failed',
+        demoPress:()=>this.gatePress(),confirmDelete:()=>this.confirmUngated(),close:()=>this.closeGate()};
+    }
+
+    return {
+      rootStyle, authed:S.authed, notAuthed:!S.authed,
+      login:()=>this.login(), logout:()=>this.logout(),
+      onLoginKey:(e)=>this.onLoginKey(e),
+      loginErr:S.loginErr||'',
+      loginHint:this.DEMO?'데모 모드 — salt/login 챌린지 UI만, 인증 로직 없음':'salt → PBKDF2/MD5 → login (2단계 챌린지·응답)',
+      view, v, nav, title:titles[view][0], subtitle:titles[view][1],
+      clients, counts,
+      procs, hasProcs:procs.length>0, noProcs:procs.length===0, livelog,
+      acts,
+      bkPick, bkList, sel, fileBackups, imageBackups, noFileBackups:fileBackups.length===0, noImageBackups:imageBackups.length===0,
+      browsing, crumbs, files,
+      onZip:()=>this.downloadZip(), onRestoreFolder:()=>this.restoreFolderToClient(),
+      imageRestoreList, restoreItems, hasRestoreItems:restoreItems.length>0, noRestoreItems:restoreItems.length===0,
+      logsList, logBody, logTitle, logMeta,
+      usage, pieStyle, pieLegend, totalUsed,
+      generalSettings, gateDisabledStr:String(!S.gateEnabled), gateTimeout:S.gateTimeout,
+      gateToggleStyle, gateKnobStyle, toggleGate:()=>this.setState(s=>({gateEnabled:!s.gateEnabled})),
+      onTimeout:(e)=>this.setState({gateTimeout:+e.target.value}),
+      users:S.users.map(u=>({...u,initial:u.name[0].toUpperCase()})),
+      gate,
+    };
+  }
+}
+</script>
+</body>
+</html>
