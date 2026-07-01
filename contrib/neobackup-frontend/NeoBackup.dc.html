@@ -164,7 +164,7 @@
           <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:40px;text-align:center;color:#5b6677;margin-bottom:26px"><i class="ph ph-check-circle" style="font-size:30px;color:var(--ac,#3ddc84)"></i><div style="margin-top:10px;font-size:13.5px">진행 중인 작업이 없습니다</div></div>
         </sc-if>
         <div style="display:flex;align-items:center;gap:9px;margin:0 0 12px"><i class="ph ph-terminal-window" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">라이브 로그</span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ liveLabel }}</span><sc-if value="{{ liveActive }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;border-radius:50%;background:#e5484d;animation:nb-blink 1.2s infinite"></span></sc-if></div>
-        <div style="background:#070a0e;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.85;max-height:240px;overflow-y:auto">
+        <div id="nb-livelog" style="background:#070a0e;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.85;max-height:240px;overflow-y:auto">
           <sc-for list="{{ livelog }}" as="l" hint-placeholder-count="6"><div style="display:flex;gap:12px"><span style="color:#3c4452">{{ l.t }}</span><span style="{{ l.style }}">{{ l.msg }}</span></div></sc-for>
           <sc-if value="{{ liveEmpty }}" hint-placeholder-val="{{ false }}"><div style="color:#3c4452">진행 중인 백업의 로그를 기다리는 중…</div></sc-if>
         </div>
@@ -488,6 +488,26 @@ class Component extends DCLogic {
       this.api('status').then(d=>{
         if(d && d.error!==1){ this.setState({authed:true}); this.loadAll(); this.startPolling(); }
       }).catch(()=>{});
+    }
+  }
+  componentDidUpdate(){ this._stickLiveLog(); }
+  // 라이브 로그 자동 스크롤: 기본은 하단 고정(stick). 사용자가 위로 올리면 해제하고,
+  // 다시 하단 근처로 오면 재활성. 자동 스크롤이 유발한 스크롤은 무시한다.
+  _stickLiveLog(){
+    const el=document.getElementById('nb-livelog');
+    if(!el) return;
+    if(this._liveStick===undefined) this._liveStick=true;
+    if(el!==this._liveLogEl){                 // 새로 마운트된 컨테이너면 스크롤 리스너 부착
+      this._liveLogEl=el;
+      el.addEventListener('scroll',()=>{
+        if(this._liveAutoScroll) return;      // 우리가 스크롤한 것
+        this._liveStick = (el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+      });
+    }
+    if(this._liveStick){
+      this._liveAutoScroll=true;
+      el.scrollTop=el.scrollHeight;
+      requestAnimationFrame(()=>{ this._liveAutoScroll=false; });
     }
   }
   componentWillUnmount(){clearInterval(this._gateTimer);clearInterval(this._poll);this.stopLive();}
