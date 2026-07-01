@@ -1,7 +1,7 @@
 # NeoBackup Ransom Defender — 프론트엔드
 
 UrBackup 서버 Web API 위에서 동작하는 React(DC) 기반 대체 웹 콘솔.
-물리 확인 게이트(GPIO 17) 상태를 우아하게 표시하는 데 초점을 둔 스킨이다.
+물리 확인 게이트(GPIO 26) 상태를 우아하게 표시하는 데 초점을 둔 스킨이다.
 
 ## 파일
 

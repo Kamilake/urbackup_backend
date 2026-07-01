@@ -29,7 +29,7 @@ namespace
 	const int default_timeout_ms = 90 * 1000; // 90s, per NeoBackup spec
 	const int min_timeout_ms = 30 * 1000;
 	const int max_timeout_ms = 300 * 1000;
-	const unsigned int default_gpio_line = 17;	  // GPIO 17 (BCM), 40-pin header
+	const unsigned int default_gpio_line = 26;	  // GPIO 26 (BCM), 40-pin header
 	// Raspberry Pi 5: the 40-pin header GPIOs live on the RP1 controller, which
 	// enumerates as gpiochip4 (pinctrl-rp1). gpiochip0 is the SoC-internal
 	// controller on Pi 5. On Pi 4 and earlier the header is gpiochip0.
@@ -128,7 +128,7 @@ namespace
 }
 
 #ifdef WITH_LIBGPIOD
-// Watches GPIO 17 for falling edges (active-low button with pull-up) and
+// Watches GPIO 26 for falling edges (active-low button with pull-up) and
 // notifies the gate on each press.
 class GpioWatcherThread : public IThread
 {

@@ -1,13 +1,13 @@
 # Physical Confirmation Gate (NeoBackup Ransom Defender)
 
-파괴적(destructive) 백업 작업을 **GPIO 17 물리 버튼** 승인 없이는 커밋하지 못하게 막는 게이트.
+파괴적(destructive) 백업 작업을 **GPIO 26 물리 버튼** 승인 없이는 커밋하지 못하게 막는 게이트.
 네트워크/관리자 계정이 장악돼도 원격으로는 백업 삭제가 불가능하다.
 
 ## 변경 요약
 
 | 파일 | 변경 |
 |------|------|
-| `urbackupserver/PhysicalGate.h` / `.cpp` | **신규.** 게이트 싱글톤 + GPIO 17 watcher 스레드 + append-only 감사 로그 |
+| `urbackupserver/PhysicalGate.h` / `.cpp` | **신규.** 게이트 싱글톤 + GPIO 26 watcher 스레드 + append-only 감사 로그 |
 | `urbackupserver/serverinterface/backups.cpp` | `delete_now`(파일 백업, 양수 id) 실제 삭제 직전에 `PhysicalGate::requestApproval()` 통과. 타임아웃 시 `physical_confirmation_timeout` 반환하고 삭제 안 함 |
 | `urbackupserver/dllmain.cpp` | 시작 시 `PhysicalGate::init()`, 종료 시 `PhysicalGate::destroy()` |
 | `Makefile.am_server` | `PhysicalGate.cpp` 추가, `WITH_LIBGPIOD`일 때 `-lgpiod` + `-DWITH_LIBGPIOD` |
@@ -16,7 +16,7 @@
 ## 동작
 
 ```
-요청(delete_now) → PENDING 큐 등록(감사 로그) → GPIO 17 눌림 대기(기본 90초)
+요청(delete_now) → PENDING 큐 등록(감사 로그) → GPIO 26 눌림 대기(기본 90초)
    ├─ 버튼 눌림  → APPROVED  → 기존 ServerCleanupThread 삭제 실행
    └─ 타임아웃   → TIMEOUT   → 삭제 폐기, UI에 physical_confirmation_timeout
 ```
@@ -40,7 +40,7 @@
 | `physical_gate_disabled` | `false` | `true`면 게이트 비활성(삭제 즉시 허용) |
 | `physical_gate_timeout_ms` | `90000` | 승인 대기(30000–300000으로 클램프) |
 | `physical_gate_gpio_chip` | `gpiochip0` | GPIO 칩 이름 |
-| `physical_gate_gpio_line` | `17` | GPIO 라인 오프셋(BCM 번호) |
+| `physical_gate_gpio_line` | `26` | GPIO 라인 오프셋(BCM 번호) |
 | `physical_gate_audit_log` | `/var/log/urbackup_physical_gate.log` | append-only 감사 로그 |
 
 ## 콘솔 상태 표시 (간지나는 배너)

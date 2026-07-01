@@ -17,7 +17,7 @@
 
 // Physical Confirmation Gate: destructive operations (e.g. manual snapshot
 // deletion) are queued as PENDING and only committed when the physical button
-// (GPIO 17) is pressed within a timeout window. Otherwise the request is
+// (GPIO 26) is pressed within a timeout window. Otherwise the request is
 // discarded automatically.
 class PhysicalGate
 {

@@ -219,7 +219,7 @@ async openGate(cid, backup, kind){
 # 서버를 포그라운드로 띄워 컬러 배너 확인 (개발/데모용)
 sudo systemctl stop urbackupsrv
 sudo -u urbackup /usr/bin/urbackupsrv run --config /etc/default/urbackupsrv
-# UI에서 '즉시 삭제' → 콘솔에 노랑 'PHYSICAL CONFIRMATION REQUIRED' → GPIO17 버튼 → 초록 'APPROVED'
+# UI에서 '즉시 삭제' → 콘솔에 노랑 'PHYSICAL CONFIRMATION REQUIRED' → GPIO26 버튼 → 초록 'APPROVED'
 tail -f /var/log/urbackup_physical_gate.log   # 감사 로그(append-only)
 ```
 

@@ -47,7 +47,7 @@
         <h1 style="font-size:40px;line-height:1.18;font-weight:600;margin:0 0 20px;letter-spacing:-.5px">원격만으로는<br>백업을 지울 수 없습니다.</h1>
         <p style="font-size:15px;line-height:1.7;color:#97a1b2;margin:0">관리자 계정이 장악돼도 파괴적 작업은 기기 앞의 물리 버튼을 눌러야만 커밋됩니다. 랜섬웨어로부터 백업 자체를 지키는 마지막 방어선.</p>
         <div style="margin-top:34px;display:flex;gap:26px">
-          <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">GPIO&nbsp;17</div><div style="font-size:12px;color:#5b6677;margin-top:3px">물리 승인 라인</div></div>
+          <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">GPIO&nbsp;26</div><div style="font-size:12px;color:#5b6677;margin-top:3px">물리 승인 라인</div></div>
           <div style="width:1px;background:#1b2230"></div>
           <div><div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace">90<span style="font-size:13px;color:#5b6677">s</span></div><div style="font-size:12px;color:#5b6677;margin-top:3px">기본 승인 대기</div></div>
           <div style="width:1px;background:#1b2230"></div>
@@ -423,7 +423,7 @@
       <sc-if value="{{ gate.showDevice }}" hint-placeholder-val="{{ true }}">
         <div style="margin-top:22px;background:#0a0d12;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left">
           <div style="width:40px;height:40px;border-radius:9px;background:#161b24;border:1px solid #232b38;display:grid;place-items:center"><i class="ph ph-cpu" style="font-size:20px;color:#97a1b2"></i></div>
-          <div style="flex:1"><div style="font-size:12.5px;font-weight:500">라즈베리파이 · GPIO 17</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">falling-edge · 250ms debounce</div></div>
+          <div style="flex:1"><div style="font-size:12.5px;font-weight:500">라즈베리파이 · GPIO 26</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">falling-edge · 250ms debounce</div></div>
           <button onClick="{{ gate.demoPress }}" style="display:flex;align-items:center;gap:7px;border:none;border-radius:10px;padding:10px 15px;font-size:12.5px;font-weight:600;cursor:pointer;color:#06210f;background:var(--ac,#3ddc84);animation:nb-glowpulse 2s ease-in-out infinite" style-active="transform:scale(.95)"><i class="ph-fill ph-radio-button"></i>버튼 누르기</button>
         </div>
         <div style="font-size:10.5px;color:#3c4452;margin-top:10px;font-family:'IBM Plex Mono',monospace">데모 — 실제 배포에서는 물리 버튼이 이 자리를 대신합니다</div>
@@ -1176,7 +1176,7 @@ class Component extends DCLogic {
       const ph=g.phase;
       const map={
         awaiting:{color:'#f5a524',icon:'ph ph-fingerprint',word:'PHYSICAL CONFIRMATION REQUIRED',head:'기기의 보호 버튼을 눌러 삭제를 승인하세요',sub:'NeoBackup Ransom Defender — 원격만으로는 백업을 삭제할 수 없습니다.',pulse:true},
-        approved:{color:ac,icon:'ph-fill ph-shield-check',word:'PHYSICAL BUTTON PRESSED',head:'물리 확인됨. 백업을 삭제합니다.',sub:'GPIO 17 falling-edge 감지 — 승인이 감사 로그에 기록되었습니다.',pulse:false},
+        approved:{color:ac,icon:'ph-fill ph-shield-check',word:'PHYSICAL BUTTON PRESSED',head:'물리 확인됨. 백업을 삭제합니다.',sub:'GPIO 26 falling-edge 감지 — 승인이 감사 로그에 기록되었습니다.',pulse:false},
         deleted:{color:ac,icon:'ph-fill ph-check-circle',word:'DELETED',head:'백업을 삭제했습니다',sub:'요청이 정상적으로 커밋되었습니다.',pulse:false},
         timeout:{color:'#8a93a3',icon:'ph ph-clock-countdown',word:'TIMEOUT — REQUEST DISCARDED',head:'시간 내 확인이 없어 삭제를 취소했습니다',sub:'백업은 안전하게 보존됩니다. physical_confirmation_timeout',pulse:false},
         failed:{color:'#e5484d',icon:'ph ph-x-circle',word:'DELETE FAILED',head:'삭제에 실패했습니다',sub:'delete_file_backup_failed — 저장소 상태를 확인하세요.',pulse:false},
