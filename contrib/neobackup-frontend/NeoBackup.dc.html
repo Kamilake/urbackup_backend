@@ -163,9 +163,10 @@
         <sc-if value="{{ noProcs }}" hint-placeholder-val="{{ false }}">
           <div style="background:#11151c;border:1px solid #1b2230;border-radius:12px;padding:40px;text-align:center;color:#5b6677;margin-bottom:26px"><i class="ph ph-check-circle" style="font-size:30px;color:var(--ac,#3ddc84)"></i><div style="margin-top:10px;font-size:13.5px">진행 중인 작업이 없습니다</div></div>
         </sc-if>
-        <div style="display:flex;align-items:center;gap:9px;margin:0 0 12px"><i class="ph ph-terminal-window" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">라이브 로그</span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">livelog · WEB-PROD-01</span><span style="width:7px;height:7px;border-radius:50%;background:#e5484d;animation:nb-blink 1.2s infinite"></span></div>
+        <div style="display:flex;align-items:center;gap:9px;margin:0 0 12px"><i class="ph ph-terminal-window" style="color:#97a1b2"></i><span style="font-weight:600;font-size:14px">라이브 로그</span><span style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ liveLabel }}</span><sc-if value="{{ liveActive }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;border-radius:50%;background:#e5484d;animation:nb-blink 1.2s infinite"></span></sc-if></div>
         <div style="background:#070a0e;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.85;max-height:240px;overflow-y:auto">
           <sc-for list="{{ livelog }}" as="l" hint-placeholder-count="6"><div style="display:flex;gap:12px"><span style="color:#3c4452">{{ l.t }}</span><span style="{{ l.style }}">{{ l.msg }}</span></div></sc-for>
+          <sc-if value="{{ liveEmpty }}" hint-placeholder-val="{{ false }}"><div style="color:#3c4452">진행 중인 백업의 로그를 기다리는 중…</div></sc-if>
         </div>
       </sc-if>
 
@@ -473,7 +474,7 @@ class Component extends DCLogic {
       clients:[], progress:[], lastacts:[], bk:{}, logs:[], usage:[], users:[],
       bkClient:null, browsePath:null, browseBackupid:null, fileList:[],
       selectedLog:null,
-      livelog:[],
+      livelog:[], liveSource:null,
       restoreItems:[],
       gateEnabled:true,
       gateTimeout: this.props.gateTimeout || 90,
@@ -489,7 +490,7 @@ class Component extends DCLogic {
       }).catch(()=>{});
     }
   }
-  componentWillUnmount(){clearInterval(this._gateTimer);clearInterval(this._poll);clearInterval(this._liveTimer);}
+  componentWillUnmount(){clearInterval(this._gateTimer);clearInterval(this._poll);this.stopLive();}
 
   // ===== live API: polling lifecycle =====
   startPolling(){
@@ -497,8 +498,45 @@ class Component extends DCLogic {
     this._poll=setInterval(()=>{ this.loadStatus(); this.loadProgress(); }, 3000);
   }
   toLogin(){ this._ses=null; this._rights=null; try{localStorage.removeItem('nb_ses');}catch(e){}
-    clearInterval(this._poll); clearInterval(this._liveTimer);
-    this.setState({authed:false}); }
+    clearInterval(this._poll); this.stopLive();
+    this.setState({authed:false, livelog:[], liveSource:null}); }
+
+  // ===== live API: live log long-poll =====
+  // 실행 중 백업의 라이브 로그를 `livelog` 액션으로 롤폴링한다.
+  // 대상(clientid+logid)은 loadProgress가 설정한다.
+  stopLive(){ this._liveGen=(this._liveGen||0)+1; }
+  setLiveTarget(clientid, logid, sourceName){
+    const same = this._liveClientid===clientid && this._liveLogid===logid;
+    if(same) return;
+    this.stopLive();
+    this._liveClientid=clientid; this._liveLogid=logid; this._liveLastid=0;
+    this.setState({livelog:[], liveSource: clientid!=null? (sourceName||'') : null});
+    if(clientid!=null) this.pollLive(this._liveGen);
+  }
+  async pollLive(gen){
+    if(gen!==this._liveGen) return;                    // 대상 변경/종료됨
+    const cid=this._liveClientid; if(cid==null) return;
+    const params={ clientid:String(cid) };
+    if(this._liveLogid) params.logid=String(this._liveLogid);
+    if(this._liveLastid) params.lastid=String(this._liveLastid);
+    try{
+      const d=await this.api('livelog', params, 30000);   // 서버가 최대 10s 블로킹
+      if(gen!==this._liveGen) return;
+      if(d && d.error===1) return this.toLogin();
+      const rows=(d && Array.isArray(d.logdata))? d.logdata : [];
+      if(rows.length){
+        let maxid=this._liveLastid;
+        const lines=rows.map(r=>{ const id=+r.id; if(id>maxid) maxid=id;
+          return { l:(+r.loglevel>=2?2:(+r.loglevel===1?1:0)), t:this._hms(+r.time), m:r.msg||'' }; });
+        this._liveLastid=maxid;
+        this.setState(s=>({livelog:[...s.livelog.slice(-400), ...lines].slice(-400)}));
+      }
+    }catch(e){ if(gen!==this._liveGen) return; await this._sleep(1500); }
+    if(gen===this._liveGen) this.pollLive(gen);          // 즉시 재폴링(롱폴)
+  }
+  _hms(sec){ if(!sec) return ''; const d=new Date(sec*1000); const p=n=>String(n).padStart(2,'0');
+    return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+  _sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
   hasRight(domain){ const v=this._rights&&this._rights[domain]; return !!(v&&v!=='none'); }
 
   // ===== live API: data loaders =====
@@ -529,10 +567,15 @@ class Component extends DCLogic {
         name:p.name, clientid:+p.clientid, action:+p.action, pcdone:+p.pcdone||0, queue:+p.queue||0,
         id:+p.id, logid:+p.logid||0, details:p.details||'', total_bytes:+p.total_bytes||0,
         done_bytes:+p.done_bytes||0, eta_ms:+p.eta_ms||0, speed_bpms:+p.speed_bpms||0,
-        paused:!!p.paused, can_stop_backup:!!p.can_stop_backup }));
+        paused:!!p.paused, can_stop_backup:!!p.can_stop_backup,
+        can_show_backup_log:!!p.can_show_backup_log }));
       const st={progress};
       if(Array.isArray(d.lastacts)) st.lastacts=this._mapLastacts(d.lastacts);
       this.setState(st);
+      // 라이브 로그: 로그 조회 가능한 첫 실행 중 백업을 대상으로 선택.
+      const lv=progress.find(p=>p.can_show_backup_log && p.logid) || progress.find(p=>p.logid);
+      if(lv) this.setLiveTarget(lv.clientid, lv.logid, lv.name);
+      else this.setLiveTarget(null, 0, null);
     }catch(e){}
   }
 
@@ -882,6 +925,9 @@ class Component extends DCLogic {
         onStop:()=>this.stopProc(p.id)};
     });
     const livelog=S.livelog.map(l=>({t:l.t,msg:l.m,style:`color:${l.l===2?'#e5484d':l.l===1?'#f5a524':'#9fb0c4'}`}));
+    const liveActive=S.liveSource!=null;
+    const liveLabel=liveActive?('livelog · '+(S.liveSource||'')):'livelog · 대기 중';
+    const liveEmpty=livelog.length===0;
 
     // lastacts
     const acts=S.lastacts.map(a=>{
@@ -1009,7 +1055,7 @@ class Component extends DCLogic {
       loginHint:'salt → PBKDF2/MD5 → login (2단계 챌린지·응답)',
       view, v, nav, title:titles[view][0], subtitle:titles[view][1],
       clients, counts,
-      procs, hasProcs:procs.length>0, noProcs:procs.length===0, livelog,
+      procs, hasProcs:procs.length>0, noProcs:procs.length===0, livelog, liveActive, liveLabel, liveEmpty,
       acts,
       bkPick, bkList, sel, fileBackups, imageBackups, noFileBackups:fileBackups.length===0, noImageBackups:imageBackups.length===0,
       browsing, crumbs, files,
