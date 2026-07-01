@@ -102,7 +102,6 @@
       <div style="flex:1"><div style="font-size:16px;font-weight:600">{{ title }}</div><div style="font-size:11.5px;color:#5b6677">{{ subtitle }}</div></div>
       <div style="display:flex;align-items:center;gap:7px;background:#11151c;border:1px solid #232b38;border-radius:20px;padding:5px 12px 5px 10px;font-size:12px"><span style="width:7px;height:7px;border-radius:50%;background:var(--ac,#3ddc84);box-shadow:0 0 8px var(--ac,#3ddc84)"></span><span style="color:#97a1b2">서버 연결됨</span><span style="color:#3c4452;font-family:'IBM Plex Mono',monospace">:55414</span></div>
       <div style="display:flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);border-radius:20px;padding:5px 12px;font-size:11.5px;color:var(--ac,#3ddc84)"><i class="ph-fill ph-shield-check"></i><span>Ransom Defender 활성</span></div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace"><i class="ph ph-flask" style="font-size:14px"></i>DEMO</div>
     </header>
 
     <main style="flex:1;overflow-y:auto;padding:26px">
@@ -424,9 +423,8 @@
         <div style="margin-top:22px;background:#0a0d12;border:1px solid #1b2230;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left">
           <div style="width:40px;height:40px;border-radius:9px;background:#161b24;border:1px solid #232b38;display:grid;place-items:center"><i class="ph ph-cpu" style="font-size:20px;color:#97a1b2"></i></div>
           <div style="flex:1"><div style="font-size:12.5px;font-weight:500">라즈베리파이 · GPIO 26</div><div style="font-size:11px;color:#5b6677;font-family:'IBM Plex Mono',monospace">falling-edge · 250ms debounce</div></div>
-          <button onClick="{{ gate.demoPress }}" style="display:flex;align-items:center;gap:7px;border:none;border-radius:10px;padding:10px 15px;font-size:12.5px;font-weight:600;cursor:pointer;color:#06210f;background:var(--ac,#3ddc84);animation:nb-glowpulse 2s ease-in-out infinite" style-active="transform:scale(.95)"><i class="ph-fill ph-radio-button"></i>버튼 누르기</button>
         </div>
-        <div style="font-size:10.5px;color:#3c4452;margin-top:10px;font-family:'IBM Plex Mono',monospace">데모 — 실제 배포에서는 물리 버튼이 이 자리를 대신합니다</div>
+        <div style="font-size:10.5px;color:#3c4452;margin-top:10px;font-family:'IBM Plex Mono',monospace">물리 버튼을 눌러 삭제를 승인하세요</div>
       </sc-if>
 
       <sc-if value="{{ gate.showConfirm }}" hint-placeholder-val="{{ false }}">
@@ -457,14 +455,10 @@ class Component extends DCLogic {
   constructor(props){
     super(props);
     // ===== live-server wiring =====
-    // DEMO=true  -> 내장 목업/시뮬레이션 (오프라인 데모)
-    // DEMO=false -> 실제 UrBackup 서버 Web API (same-origin /x?a=...)
-    // URL에 ?demo=1 / ?demo=0 으로도 강제 가능.
-    this.DEMO = (()=>{ try{ const p=new URLSearchParams(location.search).get('demo');
-      if(p==='1'||p==='true') return true; if(p==='0'||p==='false') return false; }catch(e){}
-      return false; })();
+    // 실제 UrBackup 서버 Web API (same-origin /x?a=...)
     this._ses = null;     // 세션 ID (api()가 자동 첨부)
     this._rights = null;  // login 응답의 권한 도메인 맵
+    this.logBodies = {};  // 로그 본문 캐시 (loadLogBody가 채움)
     try{ this._ses = localStorage.getItem('nb_ses') || null; }catch(e){}
     const now = Math.floor(Date.now()/1000);
     this.now = now;
@@ -472,112 +466,22 @@ class Component extends DCLogic {
     this.U={GB,MB,H,D};
     this.actionLabels=['유휴','증분 파일 백업','전체 파일 백업','증분 이미지 백업','전체 이미지 백업','증분 파일 재개','전체 파일 재개','CDP 동기화','파일 복원','이미지 복원','클라이언트 업데이트','ident 오류','클라이언트 과다','인증 오류','UID 변경됨','인증 중','설정 오류','시작 중'];
 
-    const clients=[
-      {id:1,name:'DESKTOP-NOA',os:'windows',osv:'Windows 11 Pro',cv:'2.5.31',ip:'192.168.0.10',online:true,lastbackup:now-2*H,lastimage:now-20*H,issues:0,status:0,nopath:false},
-      {id:2,name:'WEB-PROD-01',os:'linux',osv:'Ubuntu 22.04 LTS',cv:'2.5.31',ip:'10.0.1.4',online:true,lastbackup:now-30*60,lastimage:0,issues:0,status:2,nopath:false},
-      {id:3,name:'MACBOOK-LEE',os:'osx',osv:'macOS 14 Sonoma',cv:'2.5.29',ip:'192.168.0.22',online:false,lastbackup:now-2*D,lastimage:0,issues:2,status:0,nopath:false},
-      {id:4,name:'DB-MAIN',os:'linux',osv:'Debian 12',cv:'2.5.31',ip:'10.0.1.9',online:true,lastbackup:now-2*H,lastimage:now-2*H,issues:0,status:3,nopath:false},
-      {id:5,name:'FINANCE-PC',os:'windows',osv:'Windows 10 Pro',cv:'2.5.31',ip:'192.168.0.41',online:true,lastbackup:0,lastimage:0,issues:0,status:0,nopath:true},
-      {id:6,name:'KIOSK-03',os:'windows',osv:'Windows 10 IoT',cv:'2.4.13',ip:'192.168.5.30',online:false,lastbackup:now-31*D,lastimage:0,issues:5,status:0,nopath:false},
-    ];
-    const progress=[
-      {name:'WEB-PROD-01',clientid:2,action:2,pcdone:42,queue:3,id:5,logid:123,details:'/var/www/html/uploads',total_bytes:48*GB,done_bytes:20*GB,eta_ms:7*60000,speed_bpms:62000,paused:false,can_stop_backup:true},
-      {name:'DB-MAIN',clientid:4,action:3,pcdone:78,queue:0,id:8,logid:124,details:'/dev/sda2 (image)',total_bytes:220*GB,done_bytes:171*GB,eta_ms:4*60000,speed_bpms:140000,paused:false,can_stop_backup:true},
-    ];
-    const lastacts=[
-      {id:421,clientid:1,name:'DESKTOP-NOA',backuptime:now-2*H,incremental:1,duration:412,size_bytes:1.2*GB,image:0,del:false,details:'C:'},
-      {id:420,clientid:4,name:'DB-MAIN',backuptime:now-2*H,incremental:0,duration:5240,size_bytes:171*GB,image:1,del:false,details:'/dev/sda2'},
-      {id:419,clientid:2,name:'WEB-PROD-01',backuptime:now-3*H,incremental:1,duration:184,size_bytes:0.4*GB,image:0,del:false,details:'/'},
-      {id:418,clientid:3,name:'MACBOOK-LEE',backuptime:now-2*D,incremental:1,duration:902,size_bytes:2.1*GB,image:0,del:false,details:'/Users'},
-      {id:417,clientid:1,name:'DESKTOP-NOA',backuptime:now-26*H,incremental:0,duration:7200,size_bytes:31*GB,image:0,del:false,details:'C:'},
-      {id:416,clientid:4,name:'DB-MAIN',backuptime:now-3*D,incremental:0,duration:120,size_bytes:-1,image:0,del:true,details:'retention'},
-    ];
-    const bk={
-      1:{fileBackups:[
-          {id:5021,backuptime:now-2*H,incremental:1,size_bytes:1.2*GB,archived:0},
-          {id:5018,backuptime:now-26*H,incremental:0,size_bytes:31*GB,archived:0},
-          {id:5009,backuptime:now-8*D,incremental:1,size_bytes:0.8*GB,archived:1},
-        ],imageBackups:[
-          {id:71,backuptime:now-20*H,incremental:0,size_bytes:180*GB,letter:'C:',archived:0},
-        ]},
-      2:{fileBackups:[
-          {id:6102,backuptime:now-3*H,incremental:1,size_bytes:0.4*GB,archived:0},
-          {id:6098,backuptime:now-27*H,incremental:0,size_bytes:48*GB,archived:0},
-        ],imageBackups:[]},
-      4:{fileBackups:[
-          {id:7044,backuptime:now-2*H,incremental:1,size_bytes:2.1*GB,archived:0},
-        ],imageBackups:[
-          {id:88,backuptime:now-2*H,incremental:0,size_bytes:220*GB,letter:'/dev/sda2',archived:0},
-          {id:80,backuptime:now-7*D,incremental:0,size_bytes:218*GB,letter:'/dev/sda2',archived:1},
-        ]},
-    };
-    this.tree={
-      '/':[{name:'Documents',dir:true},{name:'Projects',dir:true},{name:'report-2026.pdf',dir:false,size:248213,mod:now-3*D},{name:'backup.tar.gz',dir:false,size:1843200312,mod:now-9*D}],
-      '/Documents':[{name:'contracts',dir:true},{name:'invoice_q1.xlsx',dir:false,size:88210,mod:now-12*D},{name:'notes.txt',dir:false,size:1422,mod:now-2*D}],
-      '/Documents/contracts':[{name:'neowine_msa.pdf',dir:false,size:512300,mod:now-40*D},{name:'nda_2025.pdf',dir:false,size:208112,mod:now-90*D}],
-      '/Projects':[{name:'neobackup',dir:true},{name:'website',dir:true}],
-      '/Projects/neobackup':[{name:'PhysicalGate.cpp',dir:false,size:14820,mod:now-5*D},{name:'PhysicalGate.h',dir:false,size:3210,mod:now-5*D},{name:'README.md',dir:false,size:6044,mod:now-5*D}],
-      '/Projects/website':[{name:'index.html',dir:false,size:9210,mod:now-30*D}],
-    };
-    const logs=[
-      {id:301,name:'WEB-PROD-01',time:now-1800,errors:0,warnings:1,image:0,incremental:1},
-      {id:300,name:'DESKTOP-NOA',time:now-2*H,errors:0,warnings:0,image:0,incremental:1},
-      {id:299,name:'DB-MAIN',time:now-2*H,errors:1,warnings:2,image:1,incremental:0},
-      {id:298,name:'MACBOOK-LEE',time:now-2*D,errors:0,warnings:2,image:0,incremental:1},
-      {id:297,name:'KIOSK-03',time:now-31*D,errors:3,warnings:0,image:0,incremental:1},
-      {id:296,name:'DB-MAIN',time:now-7*D,errors:0,warnings:0,image:1,incremental:0},
-    ];
-    this.logBodies={
-      301:[{l:0,t:'14:02:11',m:'Starting unscheduled incremental file backup of "WEB-PROD-01"'},{l:0,t:'14:02:13',m:'Indexing of "/var/www" done. 12,402 files'},{l:1,t:'14:04:55',m:'Warning: /var/www/cache locked, skipped 14 files'},{l:0,t:'14:05:32',m:'Transferred 412 MB · backup time 184s'},{l:0,t:'14:05:32',m:'Backup succeeded with warnings'}],
-      300:[{l:0,t:'13:31:02',m:'Starting incremental file backup of "DESKTOP-NOA"'},{l:0,t:'13:37:51',m:'Transferred 1.2 GB · 412s'},{l:0,t:'13:37:51',m:'Backup succeeded'}],
-      299:[{l:0,t:'12:44:00',m:'Starting full image backup of /dev/sda2'},{l:1,t:'13:50:11',m:'Warning: bad blocks detected on source, retried'},{l:1,t:'14:02:33',m:'Warning: snapshot pressure high'},{l:2,t:'14:09:40',m:'Error: write timeout on storage volume, segment requeued'},{l:0,t:'14:10:55',m:'Image backup completed after retry · 171 GB'}],
-      298:[{l:0,t:'02:00:00',m:'Starting incremental file backup of "MACBOOK-LEE"'},{l:1,t:'02:12:09',m:'Warning: 2 files changed during read'},{l:1,t:'02:14:48',m:'Warning: APFS local snapshot delete failed'},{l:0,t:'02:15:02',m:'Backup succeeded with warnings'}],
-      297:[{l:2,t:'04:00:00',m:'Error: client not reachable (timeout)'},{l:2,t:'04:00:30',m:'Error: ident not found'},{l:2,t:'04:01:00',m:'Error: backup aborted'}],
-      296:[{l:0,t:'01:00:00',m:'Starting full image backup'},{l:0,t:'02:22:10',m:'Image backup completed · 218 GB'}],
-    };
-    const usage=[
-      {name:'DB-MAIN',files:12*GB,images:220*GB},
-      {name:'DESKTOP-NOA',files:31*GB,images:180*GB},
-      {name:'MACBOOK-LEE',files:64*GB,images:0},
-      {name:'WEB-PROD-01',files:48*GB,images:0},
-      {name:'FINANCE-PC',files:2*GB,images:0},
-      {name:'KIOSK-03',files:0.5*GB,images:0},
-    ];
-    const users=[
-      {name:'admin',rights:['all'],super:true},
-      {name:'noa',rights:['status','browse_backups','logs'],super:false},
-      {name:'backup-bot',rights:['start_backup','status'],super:false},
-    ];
-    this.livelogSeed=[
-      {l:0,t:'14:21:02',m:'reading "/var/www/html/uploads/2026"'},
-      {l:0,t:'14:21:03',m:'hashed 1,204 files (62 MB/s)'},
-      {l:1,t:'14:21:05',m:'skip locked: session.lock'},
-      {l:0,t:'14:21:06',m:'transferred chunk #4821'},
-      {l:0,t:'14:21:07',m:'reading "/var/www/html/uploads/avatars"'},
-      {l:0,t:'14:21:08',m:'queue depth 3'},
-    ];
     this.state={
       authed:false,
       loginErr:null,
       view: this.props.startView || 'dashboard',
-      clients, progress, lastacts, bk, logs, usage, users,
+      clients:[], progress:[], lastacts:[], bk:{}, logs:[], usage:[], users:[],
       bkClient:null, browsePath:null, browseBackupid:null, fileList:[],
-      selectedLog:301,
-      livelog:this.livelogSeed.slice(),
+      selectedLog:null,
+      livelog:[],
       restoreItems:[],
       gateEnabled:true,
       gateTimeout: this.props.gateTimeout || 90,
       gate:{open:false},
     };
-    this.tick=0;
   }
 
   componentDidMount(){
-    if(this.DEMO){
-      this._sim=setInterval(()=>this.simulate(),1500);
-      this._live=setInterval(()=>this.streamLive(),2200);
-      return;
-    }
     // 실서버: 저장된 세션이 있으면 status 한 번 찔러 유효성 확인 후 자동 입장.
     if(this._ses){
       this.api('status').then(d=>{
@@ -585,7 +489,7 @@ class Component extends DCLogic {
       }).catch(()=>{});
     }
   }
-  componentWillUnmount(){clearInterval(this._sim);clearInterval(this._live);clearInterval(this._gateTimer);clearInterval(this._poll);clearInterval(this._liveTimer);}
+  componentWillUnmount(){clearInterval(this._gateTimer);clearInterval(this._poll);clearInterval(this._liveTimer);}
 
   // ===== live API: polling lifecycle =====
   startPolling(){
@@ -599,16 +503,12 @@ class Component extends DCLogic {
 
   // ===== live API: data loaders =====
   async loadAll(){
-    if(!this.DEMO){
-      // 실서버 진입: 데모 잔재 제거(클라이언트 목록과 불일치 방지)
-      this.logBodies={};
-      this.setState({clients:[],progress:[],lastacts:[],bk:{},logs:[],usage:[],users:[],restoreItems:[]});
-    }
+    this.logBodies={};
+    this.setState({clients:[],progress:[],lastacts:[],bk:{},logs:[],usage:[],users:[],restoreItems:[]});
     await Promise.all([this.loadStatus(),this.loadProgress(),this.loadLastacts(),this.loadLogs(),this.loadUsage()]);
   }
 
   async loadStatus(){
-    if(this.DEMO) return;
     try{
       const d=await this.api('status');
       if(d.error===1) return this.toLogin();
@@ -622,7 +522,6 @@ class Component extends DCLogic {
   }
 
   async loadProgress(){
-    if(this.DEMO) return;
     try{
       const d=await this.api('progress');
       if(d.error===1) return this.toLogin();
@@ -643,13 +542,11 @@ class Component extends DCLogic {
     restore:+a.restore||0, details:a.details||'' })); }
 
   async loadLastacts(){
-    if(this.DEMO) return;
     try{ const d=await this.api('lastacts'); if(d.error===1) return this.toLogin();
       if(Array.isArray(d.lastacts)) this.setState({lastacts:this._mapLastacts(d.lastacts)}); }catch(e){}
   }
 
   async loadLogs(){
-    if(this.DEMO) return;
     try{ const d=await this.api('logs'); if(d.error===1) return this.toLogin();
       const logs=(d.logs||[]).map(l=>({id:+l.id,name:l.name,time:+l.time,errors:+l.errors||0,
         warnings:+l.warnings||0,image:+l.image||0,incremental:+l.incremental||0}));
@@ -658,7 +555,6 @@ class Component extends DCLogic {
   }
 
   async loadLogBody(logid,select){
-    if(this.DEMO){ if(select) this.setState({selectedLog:logid}); return; }
     try{ const d=await this.api('logs',{logid:String(logid)});
       if(d.error===1) return this.toLogin();
       if(d.log){ const body=this._parseLogBody(d.log.data);
@@ -680,43 +576,13 @@ class Component extends DCLogic {
   }
 
   async loadUsage(){
-    if(this.DEMO) return;
     try{ const d=await this.api('usage'); if(d.error===1) return this.toLogin();
       if(Array.isArray(d.usage)){ const usage=d.usage.map(u=>({name:u.name,
         files:+u.files||+u.used||0, images:+u.images||0})); this.setState({usage}); }
     }catch(e){}
   }
 
-  // ---- demo simulation: advance running backups ----
-  simulate(){
-    if(!this.state.authed) return;
-    const procs=this.state.progress.map(p=>({...p}));
-    let clients=this.state.clients.map(c=>({...c}));
-    let lastacts=this.state.lastacts;
-    const remaining=[];
-    procs.forEach(p=>{
-      p.pcdone=Math.min(100,p.pcdone+Math.round(2+Math.random()*4));
-      p.done_bytes=Math.round(p.total_bytes*p.pcdone/100);
-      p.eta_ms=Math.max(0,Math.round(p.total_bytes*(1-p.pcdone/100)/Math.max(1,p.speed_bpms)));
-      p.speed_bpms=Math.round(p.speed_bpms*(0.9+Math.random()*0.25));
-      if(p.pcdone>=100){
-        clients=clients.map(c=>c.id===p.clientid?{...c,status:0,lastbackup:this.now,lastimage:(p.action>=3?this.now:c.lastimage)}:c);
-        lastacts=[{id:9000+this.tick++,clientid:p.clientid,name:p.name,backuptime:this.now,incremental:(p.action%2===1?1:0),duration:300+Math.round(Math.random()*600),size_bytes:p.total_bytes,image:(p.action>=3?1:0),del:false,details:p.details.split(' ')[0]},...lastacts].slice(0,12);
-      } else { remaining.push(p); }
-    });
-    this.setState({progress:remaining,clients,lastacts});
-  }
-  streamLive(){
-    if(!this.state.authed||this.state.progress.length===0) return;
-    const tpl=['reading "/var/www/html/...', 'hashed %n files', 'transferred chunk #%c', 'queue depth %q','delta-compressed block'];
-    const now=new Date();
-    const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
-    const msgs=['reading "/var/www/html/uploads"','hashed '+(800+Math.round(Math.random()*900))+' files','transferred chunk #'+(4800+this.tick),'delta-compressed 18 blocks','queue depth '+(1+Math.round(Math.random()*4))];
-    const line={l:(Math.random()<0.12?1:0),t,m:msgs[Math.floor(Math.random()*msgs.length)]};
-    this.setState(s=>({livelog:[...s.livelog.slice(-40),line]}));
-  }
-
-  // ---- real API wrapper (used when not in demo / wired to live server) ----
+  // ---- real API wrapper (same-origin /x?a=...) ----
   async api(action, params={}, timeoutMs=20000){
     const body=new URLSearchParams(params);
     if(this._ses) body.set('ses',this._ses);
@@ -726,7 +592,7 @@ class Component extends DCLogic {
 
   // ---- auth: salt -> hash -> login (2-step challenge/response) ----
   onLoginKey(e){ if(e && e.key==='Enter') this.doLogin(); }
-  login(){ if(this.DEMO){ this.setState({authed:true}); return; } this.doLogin(); }
+  login(){ this.doLogin(); }
 
   hashPassword(password, salt, rnd, rounds){
     const CJS=window.CryptoJS;
@@ -799,8 +665,7 @@ class Component extends DCLogic {
   }
 
   async logout(){
-    if(!this.DEMO){ this.toLogin(); return; }
-    this.setState({authed:false});
+    this.toLogin();
   }
 
   // ---- helpers ----
@@ -816,48 +681,31 @@ class Component extends DCLogic {
     if(code===11||code===13||code===16)return {label:this.actionLabels[code],color:'#e5484d'};
     return {label:this.actionLabels[code]||'동작 중',color:'#f5a524'};
   }
-  randhex(n){let s='';const c='0123456789abcdef';for(let i=0;i<n;i++)s+=c[Math.floor(Math.random()*16)];return s;}
 
   setView(v){this.setState({view:v,bkClient:null,browsePath:null});}
 
   startBackup(id,type){
-    if(!this.DEMO){
-      this.setState({view:'progress'});
-      this.api('start_backup',{start_client:String(id), start_type:type})
-        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); this.loadStatus(); })
-        .catch(()=>{});
-      return;
-    }
-    const map={incr_file:{action:1},full_file:{action:2},incr_image:{action:3},full_image:{action:4}};
-    const a=map[type].action;
-    const c=this.state.clients.find(x=>x.id===id);
-    if(!c||!c.online) return;
-    if(this.state.progress.some(p=>p.clientid===id)) return;
-    const clients=this.state.clients.map(x=>x.id===id?{...x,status:a}:x);
-    const proc={name:c.name,clientid:id,action:a,pcdone:0,queue:0,id:9000+this.tick++,logid:0,details:c.os==='windows'?'C:\\Users':'/home',total_bytes:(2+Math.random()*40)*this.U.GB,done_bytes:0,eta_ms:600000,speed_bpms:40000+Math.random()*40000,paused:false,can_stop_backup:true};
-    this.setState({clients,progress:[...this.state.progress,proc],view:'progress'});
+    this.setState({view:'progress'});
+    this.api('start_backup',{start_client:String(id), start_type:type})
+      .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); this.loadStatus(); })
+      .catch(()=>{});
   }
   stopProc(pid){
-    if(!this.DEMO){
-      const p=this.state.progress.find(x=>x.id===pid);
-      if(!p) return;
-      this.api('progress',{stop_clientid:String(p.clientid), stop_id:String(pid)})
-        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); }).catch(()=>{});
-      return;
-    }
-    this.setState(s=>{const p=s.progress.find(x=>x.id===pid);const clients=p?s.clients.map(c=>c.id===p.clientid?{...c,status:0}:c):s.clients;return {progress:s.progress.filter(x=>x.id!==pid),clients};});
+    const p=this.state.progress.find(x=>x.id===pid);
+    if(!p) return;
+    this.api('progress',{stop_clientid:String(p.clientid), stop_id:String(pid)})
+      .then(d=>{ if(d.error===1) return this.toLogin(); this.loadProgress(); }).catch(()=>{});
   }
 
   openBackupsFor(id){
     this.setState({view:'backups',bkClient:id,browsePath:null});
-    if(!this.DEMO) this.loadBackups(id);
+    this.loadBackups(id);
   }
   backToPick(){this.setState({bkClient:null,browsePath:null,fileList:[]});}
 
   // ---- file browsing & download ----
   browseTo(backupid, path){
     this.setState({browsePath:path, browseBackupid:backupid});
-    if(this.DEMO) return;
     this.loadFiles(this.state.bkClient, backupid, path);
   }
   async loadFiles(clientid, backupid, path){
@@ -885,7 +733,6 @@ class Component extends DCLogic {
     a.download=''; document.body.appendChild(a); a.click(); a.remove();
   }
   downloadZip(){
-    if(this.DEMO) return;
     const cid=this.state.bkClient, bid=this.state.browseBackupid, path=this.state.browsePath||'/';
     if(bid==null) return;
     const a=document.createElement('a'); a.href=this.zipHref(cid,bid,path);
@@ -893,7 +740,6 @@ class Component extends DCLogic {
   }
 
   async loadBackups(clientid){
-    if(this.DEMO) return;
     try{
       const d=await this.api('backups',{sa:'backups', clientid:String(clientid)});
       if(d.error===1) return this.toLogin();
@@ -905,22 +751,14 @@ class Component extends DCLogic {
   }
 
   toggleArchive(cid,bid){
-    if(!this.DEMO){
-      const cur=((this.state.bk[cid]||{}).fileBackups||[]).find(b=>b.id===bid);
-      const key=cur&&cur.archived?'unarchive':'archive';
-      this.api('backups',{sa:'backups', clientid:String(cid), [key]:String(bid)})
-        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
-      return;
-    }
-    this.setState(s=>{const bk={...s.bk};const cl={...bk[cid]};cl.fileBackups=cl.fileBackups.map(b=>b.id===bid?{...b,archived:b.archived?0:1}:b);bk[cid]=cl;return {bk};});
+    const cur=((this.state.bk[cid]||{}).fileBackups||[]).find(b=>b.id===bid);
+    const key=cur&&cur.archived?'unarchive':'archive';
+    this.api('backups',{sa:'backups', clientid:String(cid), [key]:String(bid)})
+      .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
   }
   schedDelete(cid,bid){
-    if(!this.DEMO){
-      this.api('backups',{sa:'backups', clientid:String(cid), delete:String(bid)})
-        .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
-      return;
-    }
-    this.setState(s=>{const bk={...s.bk};const cl={...bk[cid]};cl.fileBackups=cl.fileBackups.map(b=>b.id===bid?{...b,delete_pending:true}:b);bk[cid]=cl;return {bk};});
+    this.api('backups',{sa:'backups', clientid:String(cid), delete:String(bid)})
+      .then(d=>{ if(d.error===1) return this.toLogin(); this.loadBackups(cid); }).catch(()=>{});
   }
 
   // ---- the physical gate ----
@@ -937,98 +775,65 @@ class Component extends DCLogic {
         this.setState(s=>{
           if(!s.gate.open||s.gate.phase!=='awaiting')return {};
           const r=s.gate.remaining-1;
-          if(r<=0){ if(this.DEMO){clearInterval(this._gateTimer);return {gate:{...s.gate,remaining:0,phase:'timeout'}};}
-            return {gate:{...s.gate,remaining:0}}; }
+          if(r<=0){ return {gate:{...s.gate,remaining:0}}; }
           return {gate:{...s.gate,remaining:r}};
         });
       },1000);
       // 실서버: 서버가 GPIO 버튼/타임아웃까지 응답을 붙잡는다. ~90s+여유로 310s.
-      if(!this.DEMO){
-        this._gateAbort=new AbortController();
-        this.api('backups',{sa:'backups', clientid:String(cid), delete_now:String(deleteId)}, 310000)
-          .then(d=>{
-            clearInterval(this._gateTimer);
-            if(d && d.error===1) return this.toLogin();
-            if(d && d.delete_now_err==='physical_confirmation_timeout')
-              return this.setState(s=>({gate:{...s.gate,phase:'timeout'}}));
-            if(d && d.delete_now_err==='delete_file_backup_failed')
-              return this.setState(s=>({gate:{...s.gate,phase:'failed'}}));
-            // 에러 키 없음 = 승인됨 → 삭제 완료
-            this.setState(s=>({gate:{...s.gate,phase:'approved'}}));
-            setTimeout(()=>{ this.setState(s=>({gate:{...s.gate,phase:'deleted'}})); this.loadBackups(cid); }, 1300);
-          })
-          .catch(()=>{ clearInterval(this._gateTimer);
-            this.setState(s=>(s.gate&&s.gate.open?{gate:{...s.gate,phase:'failed'}}:{})); });
-      }
+      this._gateAbort=new AbortController();
+      this.api('backups',{sa:'backups', clientid:String(cid), delete_now:String(deleteId)}, 310000)
+        .then(d=>{
+          clearInterval(this._gateTimer);
+          if(d && d.error===1) return this.toLogin();
+          if(d && d.delete_now_err==='physical_confirmation_timeout')
+            return this.setState(s=>({gate:{...s.gate,phase:'timeout'}}));
+          if(d && d.delete_now_err==='delete_file_backup_failed')
+            return this.setState(s=>({gate:{...s.gate,phase:'failed'}}));
+          // 에러 키 없음 = 승인됨 → 삭제 완료
+          this.setState(s=>({gate:{...s.gate,phase:'approved'}}));
+          setTimeout(()=>{ this.setState(s=>({gate:{...s.gate,phase:'deleted'}})); this.loadBackups(cid); }, 1300);
+        })
+        .catch(()=>{ clearInterval(this._gateTimer);
+          this.setState(s=>(s.gate&&s.gate.open?{gate:{...s.gate,phase:'failed'}}:{})); });
     } else {
       this.setState({gate:{open:true,phase:'confirm',cid,bid:backup.id,kind,deleteId,note:(deleteId<0?'이미지 백업은 게이트 미적용':'게이트 비활성 — 즉시 삭제')}});
     }
   }
-  // 데모 전용: 화면의 '버튼 누르기' (실서버에선 GPIO가 대신함, 이 핸들러는 호출 안 됨)
-  gatePress(){
-    if(!this.DEMO) return;
-    clearInterval(this._gateTimer);
-    this.setState(s=>({gate:{...s.gate,phase:'approved'}}));
-    setTimeout(()=>this.commitDelete(),1300);
-  }
   confirmUngated(){
     const g=this.state.gate;
-    if(!this.DEMO && g && g.deleteId!=null){
+    if(g && g.deleteId!=null){
       // 게이트 미적용 경로(이미지 삭제/게이트 비활성)도 실제 삭제 요청
       this.api('backups',{sa:'backups', clientid:String(g.cid), delete_now:String(g.deleteId)})
         .then(d=>{ if(d&&d.error===1) return this.toLogin(); this.loadBackups(g.cid); }).catch(()=>{});
-      this.setState({gate:{open:false}});
-      return;
     }
-    this.commitDelete(true);
-  }
-  commitDelete(immediate){
-    this.setState(s=>{
-      const bk={...s.bk};const cl={...bk[s.gate.cid]};
-      if(s.gate.kind==='image') cl.imageBackups=(cl.imageBackups||[]).filter(b=>b.id!==s.gate.bid);
-      else cl.fileBackups=(cl.fileBackups||[]).filter(b=>b.id!==s.gate.bid);
-      bk[s.gate.cid]=cl;
-      return {bk, gate: immediate? {open:false} : {...s.gate,phase:'deleted'}};
-    });
+    this.setState({gate:{open:false}});
   }
   closeGate(){clearInterval(this._gateTimer); if(this._gateAbort){try{this._gateAbort.abort();}catch(e){} this._gateAbort=null;} this.setState({gate:{open:false}});}
 
   issueImageToken(cid,b){
-    if(!this.DEMO){
-      const c=this.state.clients.find(x=>x.id===cid);
-      this.api('restore_image',{backupid:String(b.id)}).then(d=>{
-        if(d&&d.error===1) return this.toLogin();
-        if(d&&d.ok){ const item={type:'token',client:c?c.name:'',letter:b.letter,token:d.token,authkey:d.authkey,time:Date.now()};
-          this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'})); }
-      }).catch(()=>{});
-      return;
-    }
     const c=this.state.clients.find(x=>x.id===cid);
-    const item={type:'token',client:c.name,letter:b.letter,token:this.randhex(40),authkey:this.randhex(24),time:Date.now()};
-    this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'}));
+    this.api('restore_image',{backupid:String(b.id)}).then(d=>{
+      if(d&&d.error===1) return this.toLogin();
+      if(d&&d.ok){ const item={type:'token',client:c?c.name:'',letter:b.letter,token:d.token,authkey:d.authkey,time:Date.now()};
+        this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'})); }
+    }).catch(()=>{});
   }
   restoreFolderToClient(){
     const cid=this.state.bkClient;
     const c=this.state.clients.find(x=>x.id===cid);
     const path=this.state.browsePath||'/';
-    if(!this.DEMO){
-      const bks=(this.state.bk[cid]||{}).fileBackups||[];
-      const backupid=bks.length?bks[0].id:null; // 최신 파일 백업
-      if(backupid==null) return;
-      const item={type:'wait',client:c?c.name:'',path,key:'…',status:'준비 중'};
-      this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'}));
-      this.api('backups',{sa:'clientdl', clientid:String(cid), backupid:String(backupid), path})
-        .then(d=>{
-          if(d&&d.error===1) return this.toLogin();
-          this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,
-            key:d&&d.wait_key?d.wait_key:'-',
-            status:(d&&d.ok)?'복원 전송 중':(d&&d.err?('오류: '+d.err):'실패')}:r)}));
-        }).catch(()=>{ this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,status:'요청 실패'}:r)})); });
-      return;
-    }
-    const item={type:'wait',client:c?c.name:'',path,key:this.randhex(16),status:'준비 중'};
-    this.setState(s=>({restoreItems:[item,...s.restoreItems]}));
-    setTimeout(()=>this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,status:'복원 전송 중'}:r)})),2200);
+    const bks=(this.state.bk[cid]||{}).fileBackups||[];
+    const backupid=bks.length?bks[0].id:null; // 최신 파일 백업
+    if(backupid==null) return;
+    const item={type:'wait',client:c?c.name:'',path,key:'…',status:'준비 중'};
+    this.setState(s=>({restoreItems:[item,...s.restoreItems],view:'restore'}));
+    this.api('backups',{sa:'clientdl', clientid:String(cid), backupid:String(backupid), path})
+      .then(d=>{
+        if(d&&d.error===1) return this.toLogin();
+        this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,
+          key:d&&d.wait_key?d.wait_key:'-',
+          status:(d&&d.ok)?'복원 전송 중':(d&&d.err?('오류: '+d.err):'실패')}:r)}));
+      }).catch(()=>{ this.setState(s=>({restoreItems:s.restoreItems.map(r=>r===item?{...r,status:'요청 실패'}:r)})); });
   }
 
   // ===================== RENDER =====================
@@ -1117,13 +922,13 @@ class Component extends DCLogic {
       crumbs=[{label:sel.name,color:ac,go:()=>this.browseTo(bid,'/')}];
       let acc='';
       parts.forEach((p,i)=>{acc+='/'+p;const pth=acc;crumbs.push({label:p,color:i===parts.length-1?'#cfd6e1':'#97a1b2',go:()=>this.browseTo(bid,pth)});});
-      const list=this.DEMO?(this.tree[path]||[]):(S.fileList||[]);
+      const list=(S.fileList||[]);
       files=list.map(f=>{
         const childPath=(path==='/'?'':path)+'/'+f.name;
         return {name:f.name,icon:f.dir?'ph-fill ph-folder':'ph ph-file',iconColor:f.dir?'#f5a524':'#5b6677',
           sizeText:f.dir?'—':this.fmtBytes(f.size),modText:f.mod?this.abs(f.mod):'—',cursor:f.dir?'pointer':'default',
-          onOpen:f.dir?()=>this.browseTo(bid,childPath):()=>{ if(!this.DEMO) this.downloadFile(S.bkClient,bid,childPath); },
-          dlHref:(!this.DEMO&&!f.dir)?this.fileHref(S.bkClient,bid,childPath):'',
+          onOpen:f.dir?()=>this.browseTo(bid,childPath):()=>this.downloadFile(S.bkClient,bid,childPath),
+          dlHref:(!f.dir)?this.fileHref(S.bkClient,bid,childPath):'',
           action:f.dir?'':'다운로드'};
       });
     }
@@ -1139,7 +944,7 @@ class Component extends DCLogic {
     // logs
     const logsList=S.logs.map(lg=>({...lg,icon:lg.image?'ph ph-hard-drives':'ph ph-files',iconColor:lg.errors?'#e5484d':lg.warnings?'#f5a524':ac,
       timeRel:this.rel(lg.time),typeLabel:lg.image?'이미지':(lg.incremental?'증분':'전체'),hasErr:lg.errors>0,hasWarn:lg.errors===0&&lg.warnings>0,
-      onSelect:()=>{ if(this.DEMO) this.setState({selectedLog:lg.id}); else this.loadLogBody(lg.id,true); },
+      onSelect:()=>this.loadLogBody(lg.id,true),
       rowStyle:`display:flex;align-items:center;gap:11px;width:100%;border:none;border-bottom:1px solid #141923;cursor:pointer;padding:11px 16px;background:${S.selectedLog===lg.id?'#161b24':'transparent'}`}));
     const selLog=S.logs.find(l=>l.id===S.selectedLog)||{};
     const logBody=(this.logBodies[S.selectedLog]||[]).map(l=>({level:l.l===2?'ERR':l.l===1?'WRN':'INF',t:l.t,msg:l.m,
@@ -1193,7 +998,7 @@ class Component extends DCLogic {
         remaining:g.remaining,ring,
         showCountdown:ph==='awaiting',showDevice:ph==='awaiting',showConfirm:ph==='confirm',
         showCancel:ph==='awaiting',showClose:ph==='approved'||ph==='deleted'||ph==='timeout'||ph==='failed',
-        demoPress:()=>this.gatePress(),confirmDelete:()=>this.confirmUngated(),close:()=>this.closeGate()};
+        confirmDelete:()=>this.confirmUngated(),close:()=>this.closeGate()};
     }
 
     return {
@@ -1201,7 +1006,7 @@ class Component extends DCLogic {
       login:()=>this.login(), logout:()=>this.logout(),
       onLoginKey:(e)=>this.onLoginKey(e),
       loginErr:S.loginErr||'',
-      loginHint:this.DEMO?'데모 모드 — salt/login 챌린지 UI만, 인증 로직 없음':'salt → PBKDF2/MD5 → login (2단계 챌린지·응답)',
+      loginHint:'salt → PBKDF2/MD5 → login (2단계 챌린지·응답)',
       view, v, nav, title:titles[view][0], subtitle:titles[view][1],
       clients, counts,
       procs, hasProcs:procs.length>0, noProcs:procs.length===0, livelog,

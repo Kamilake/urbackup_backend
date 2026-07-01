@@ -10,7 +10,6 @@ UrBackup 서버 Web API 위에서 동작하는 React(DC) 기반 대체 웹 콘�
 | `NeoBackup.dc.html` | 소스(템플릿 + 로직). `support.js` 런타임 필요. 실서버 연동 구현 포함 |
 | `support.js` | DC 런타임(`dc-runtime/src/*.ts`에서 생성, 수정 금지) |
 | `deploy.sh` | `/usr/share/urbackup/www`에 `neo.html`로 배포 |
-| `MIGRATION.md` | 데모→실API 마이그레이션 가이드(원본) |
 
 ## 배포
 
@@ -21,8 +20,7 @@ UrBackup 서버 Web API 위에서 동작하는 React(DC) 기반 대체 웹 콘�
 
 ## 동작 모드
 
-- 기본은 **실서버 모드**(`this.DEMO=false`) — `/x?a=...` 같은 출처 호출.
-- URL 파라미터로 강제 전환: `?demo=1`(목업) / `?demo=0`(실서버).
+- 실서버 전용 — 같은 출처(same-origin) `/x?a=...` Web API로 동작한다.
 
 ## 인증
 
