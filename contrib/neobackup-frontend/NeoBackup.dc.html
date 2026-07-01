@@ -247,26 +247,6 @@
             </sc-for>
             <sc-if value="{{ noImageBackups }}" hint-placeholder-val="{{ false }}"><div style="padding:26px;text-align:center;color:#5b6677;font-size:13px">이미지 백업이 없습니다</div></sc-if>
           </div>
-
-          <sc-if value="{{ browsing }}" hint-placeholder-val="{{ false }}">
-            <div style="margin-top:26px;background:#11151c;border:1px solid #1b2230;border-radius:12px;overflow:hidden">
-              <div style="display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid #1b2230;flex-wrap:wrap">
-                <i class="ph ph-folder-open" style="color:var(--ac,#3ddc84)"></i>
-                <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2"><button onClick="{{ cr.go }}" style="background:none;border:none;color:{{ cr.color }};cursor:pointer;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:0">{{ cr.label }}</button><span style="color:#3c4452">/</span></sc-for>
-                <div style="flex:1"></div>
-                <button onClick="{{ onZip }}" style="display:flex;align-items:center;gap:6px;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:#1c222d"><i class="ph ph-file-zip"></i>ZIP</button>
-                <button onClick="{{ onRestoreFolder }}" style="display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-arrow-u-up-left"></i>클라이언트로 복원</button>
-              </div>
-              <sc-for list="{{ files }}" as="f" hint-placeholder-count="5">
-                <div style="display:grid;grid-template-columns:1.8fr .7fr 1fr auto;gap:12px;padding:10px 18px;border-bottom:1px solid #141923;font-size:13px;align-items:center;cursor:{{ f.cursor }}" onClick="{{ f.onOpen }}">
-                  <span style="display:flex;align-items:center;gap:10px"><i class="{{ f.icon }}" style="color:{{ f.iconColor }};font-size:17px"></i><span style="color:#dfe5ee">{{ f.name }}</span></span>
-                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#97a1b2">{{ f.sizeText }}</span>
-                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5b6677">{{ f.modText }}</span>
-                  <span style="text-align:right">{{ f.action }}</span>
-                </div>
-              </sc-for>
-            </div>
-          </sc-if>
         </sc-if>
       </sc-if>
 
@@ -442,6 +422,33 @@
       <sc-if value="{{ gate.showClose }}" hint-placeholder-val="{{ false }}">
         <button onClick="{{ gate.close }}" style="margin-top:24px;border:none;background:{{ gate.color }};color:#06210f;border-radius:10px;padding:11px 28px;font-size:13px;font-weight:600;cursor:pointer">확인</button>
       </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<!-- FILE BROWSER MODAL -->
+<sc-if value="{{ browsing }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:48;display:flex;align-items:center;justify-content:center;background:rgba(4,6,9,.78);backdrop-filter:blur(6px);animation:nb-fadeup .2s ease" onClick="{{ closeBrowse }}">
+    <div style="width:760px;max-width:94vw;max-height:82vh;display:flex;flex-direction:column;background:#10141b;border:1px solid #1b2230;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden" onClick="{{ stop }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:16px 20px;border-bottom:1px solid #1b2230;flex-wrap:wrap">
+        <i class="ph ph-folder-open" style="color:var(--ac,#3ddc84);font-size:18px"></i>
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2"><button onClick="{{ cr.go }}" style="background:none;border:none;color:{{ cr.color }};cursor:pointer;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:0">{{ cr.label }}</button><span style="color:#3c4452">/</span></sc-for>
+        <div style="flex:1"></div>
+        <button onClick="{{ onZip }}" style="display:flex;align-items:center;gap:6px;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:#1c222d"><i class="ph ph-file-zip"></i>ZIP</button>
+        <button onClick="{{ onRestoreFolder }}" style="display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 55%);background:color-mix(in srgb,var(--ac,#3ddc84),transparent 90%);color:var(--ac,#3ddc84);border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--ac,#3ddc84),transparent 82%)"><i class="ph ph-arrow-u-up-left"></i>클라이언트로 복원</button>
+        <button onClick="{{ closeBrowse }}" title="닫기" style="display:flex;align-items:center;justify-content:center;border:1px solid #232b38;background:#161b24;color:#97a1b2;border-radius:7px;width:30px;height:30px;font-size:14px;cursor:pointer" style-hover="color:#e5484d"><i class="ph ph-x"></i></button>
+      </div>
+      <div style="overflow-y:auto">
+        <sc-for list="{{ files }}" as="f" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:1.8fr .7fr 1fr auto;gap:12px;padding:10px 20px;border-bottom:1px solid #141923;font-size:13px;align-items:center;cursor:{{ f.cursor }}" onClick="{{ f.onOpen }}">
+            <span style="display:flex;align-items:center;gap:10px"><i class="{{ f.icon }}" style="color:{{ f.iconColor }};font-size:17px"></i><span style="color:#dfe5ee">{{ f.name }}</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#97a1b2">{{ f.sizeText }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5b6677">{{ f.modText }}</span>
+            <span style="text-align:right">{{ f.action }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noFiles }}" hint-placeholder-val="{{ false }}"><div style="padding:34px;text-align:center;color:#5b6677;font-size:13px">이 폴더에 항목이 없습니다</div></sc-if>
+      </div>
     </div>
   </div>
 </sc-if>
@@ -765,6 +772,7 @@ class Component extends DCLogic {
     this.loadBackups(id);
   }
   backToPick(){this.setState({bkClient:null,browsePath:null,fileList:[]});}
+  closeBrowse(){this.setState({browsePath:null,fileList:[]});}
 
   // ---- file browsing & download ----
   browseTo(backupid, path){
@@ -1078,7 +1086,8 @@ class Component extends DCLogic {
       procs, hasProcs:procs.length>0, noProcs:procs.length===0, livelog, liveActive, liveLabel, liveEmpty,
       acts,
       bkPick, bkList, sel, fileBackups, imageBackups, noFileBackups:fileBackups.length===0, noImageBackups:imageBackups.length===0,
-      browsing, crumbs, files,
+      browsing, crumbs, files, noFiles:browsing&&files.length===0,
+      closeBrowse:()=>this.closeBrowse(), stop:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); },
       onZip:()=>this.downloadZip(), onRestoreFolder:()=>this.restoreFolderToClient(),
       imageRestoreList, restoreItems, hasRestoreItems:restoreItems.length>0, noRestoreItems:restoreItems.length===0,
       logsList, logBody, logTitle, logMeta,
