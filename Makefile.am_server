@@ -81,11 +81,6 @@ else
 urbackupsrv_CXXFLAGS += -DNO_ZSTD_COMPRESSION
 endif
 
-if WITH_LIBGPIOD
-urbackupsrv_LDADD += -lgpiod
-urbackupsrv_CXXFLAGS += -DWITH_LIBGPIOD
-endif
-
 if !WITH_EMBEDDED_LMDB
 urbackupsrv_LDADD += -llmdb
 urbackupsrv_CXXFLAGS += -DNO_EMBEDDED_LMDB

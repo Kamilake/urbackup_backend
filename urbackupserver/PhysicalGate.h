@@ -10,73 +10,61 @@
 #pragma once
 
 #include <string>
-#include <vector>
-#include "../Interface/Thread.h"
-#include "../Interface/Mutex.h"
-#include "../Interface/Condition.h"
 
-// Physical Confirmation Gate: destructive operations (e.g. manual snapshot
-// deletion) are queued as PENDING and only committed when the physical button
-// (GPIO 26) is pressed within a timeout window. Otherwise the request is
-// discarded automatically.
+// Physical Confirmation Gate: destructive operations (e.g. manual backup
+// deletion) are only committed when a physical button is pressed within a
+// timeout window. Otherwise the request is discarded.
+//
+// The button and the security chip that authenticates it live behind the
+// neobackup-gated helper daemon, reached over a unix socket. The daemon owns
+// the serial device and the vendor crypto library; this class only asks
+// "may I proceed?" and never learns the chip protocol.
+// See PROTOCOL.md in the neobackup-gated repository.
 class PhysicalGate
 {
 public:
 	enum EGateResult
 	{
-		EGateResult_Approved,	// physical button pressed within timeout
+		EGateResult_Approved,	// button pressed and chip authenticated
+		EGateResult_Denied,		// chip authentication failed, or gate unreachable
 		EGateResult_Timeout,	// no physical confirmation in time
-		EGateResult_Disabled	// gate disabled -> caller should proceed (no gating)
+		EGateResult_Disabled	// gate disabled -> caller should proceed
 	};
 
-	// Initialize the gate singleton and start the GPIO watcher thread.
-	// Reads configuration from server parameters / environment.
+	// Read configuration from server parameters / environment.
 	static void init();
 
-	// Tear down the gate (stop watcher thread). Safe to call on shutdown.
 	static void destroy();
 
-	// Returns true if the gate is enabled (i.e. destructive ops are gated).
 	static bool isEnabled();
 
-	// Request approval for a destructive operation. Blocks until the physical
-	// button is pressed (EGateResult_Approved) or the timeout elapses
-	// (EGateResult_Timeout). If the gate is disabled, returns
-	// EGateResult_Disabled immediately so the caller proceeds without gating.
+	// Blocks until the helper daemon reports the outcome. If the gate is
+	// disabled, returns EGateResult_Disabled immediately.
+	//
+	// Any failure to reach the daemon is reported as EGateResult_Denied:
+	// without a working gate we must not delete anything.
 	//
 	// description: human-readable summary for the audit log, e.g.
 	//   "delete file backup id=42 client='exjang'".
 	static EGateResult requestApproval(const std::string& description);
 
+	// Short reason for the last denial, suitable for the web API
+	// (e.g. "chip_auth_failed"). Empty when the last result was not a denial.
+	static std::string lastDenyReason();
+
 private:
 	PhysicalGate();
-	~PhysicalGate();
 
 	static PhysicalGate* instance;
 
 	EGateResult doRequestApproval(const std::string& description);
 
-	// Called by the GPIO watcher when a physical button press is observed.
-	void onButtonPressed();
-	friend class GpioWatcherThread;
-
-	void audit(const std::string& event, const std::string& description);
-
-	IMutex* mutex;
-	ICondition* cond;
+	// Sends one request line and reads one response line. False when the
+	// daemon could not be reached.
+	bool transact(const std::string& request, std::string& response, int timeout_ms);
 
 	bool enabled;
 	int timeout_ms;
-
-	// Monotonic counter of observed button presses. A pending request records
-	// the count at the time it started waiting; any increment satisfies it.
-	unsigned int press_count;
-
-	// Number of destructive requests currently waiting for confirmation.
-	unsigned int pending_count;
-
-	std::string audit_log_path;
-	bool audit_warned;
-	IThread* watcher_thread;
-	volatile bool watcher_stop;
+	std::string socket_path;
+	std::string deny_reason;
 };

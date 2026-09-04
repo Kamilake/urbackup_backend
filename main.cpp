@@ -499,10 +499,9 @@ int main_fkt(int argc, char *argv[])
 		int rc=getpwnam_r(daemon_user.c_str(), &pwbuf, buf, 1000, &pw);
 	    if(pw!=NULL)
 	    {
-			// Load the daemon user's supplementary groups from /etc/group (e.g.
-			// "gpio" for the NeoBackup physical confirmation gate) instead of
-			// dropping all groups. This grants exactly the groups the user is a
-			// member of and nothing more.
+			// Load the daemon user's supplementary groups from /etc/group instead
+			// of dropping all groups, so memberships granted for things like the
+			// NeoBackup gate socket survive the privilege drop.
 			if (initgroups(daemon_user.c_str(), pw->pw_gid) != 0)
 			{
 				Server->Log("Unable to initialize supplementary groups for user \"" + daemon_user + "\". Errno: " + convert(errno), LL_ERROR);

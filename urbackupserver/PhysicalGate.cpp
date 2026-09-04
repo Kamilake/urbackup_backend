@@ -11,38 +11,32 @@
 #include "../Interface/Server.h"
 #include "../stringtools.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
-#include <errno.h>
-
-#ifdef WITH_LIBGPIOD
-#include <gpiod.h>
-#endif
 
 PhysicalGate* PhysicalGate::instance = NULL;
 
 namespace
 {
-	// Defaults (overridable via server parameters / environment).
 	const int default_timeout_ms = 90 * 1000; // 90s, per NeoBackup spec
 	const int min_timeout_ms = 30 * 1000;
 	const int max_timeout_ms = 300 * 1000;
-	const unsigned int default_gpio_line = 26;	  // GPIO 26 (BCM), 40-pin header
-	// Raspberry Pi 5: the 40-pin header GPIOs live on the RP1 controller, which
-	// enumerates as gpiochip4 (pinctrl-rp1). gpiochip0 is the SoC-internal
-	// controller on Pi 5. On Pi 4 and earlier the header is gpiochip0.
-	const std::string default_gpio_chip = "gpiochip4";
-	const std::string default_audit_log = "/var/log/urbackup_physical_gate.log";
+	const std::string default_socket = "/run/neobackup-gate.sock";
 
-	// ANSI color codes (only emitted when stderr is a TTY, e.g. the Pi console).
+	// Allow the daemon a little longer than the button window before we give up.
+	const int socket_grace_ms = 15 * 1000;
+
 	bool stderr_is_tty()
 	{
 		return isatty(fileno(stderr)) != 0;
 	}
 
-	// Truncate/pad a line to the banner width so the box borders stay aligned.
 	std::string banner_line(const std::string& s)
 	{
 		const size_t w = 52;
@@ -52,11 +46,8 @@ namespace
 		return t;
 	}
 
-	// Big, eye-catching banner printed directly to the console (stderr), so a
-	// terminal logged into the Pi shows physical events loudly. A timestamp line
-	// is always appended automatically.
-	// color: ANSI SGR sequence (e.g. "1;33"), ignored when not a TTY.
-	// l4 may be empty.
+	// Big, eye-catching banner on stderr so a console logged into the appliance
+	// shows physical events loudly. A timestamp is appended automatically.
 	void console_banner(const std::string& color, const std::string& l1,
 		const std::string& l2, const std::string& l3, const std::string& l4)
 	{
@@ -97,21 +88,6 @@ namespace
 		return k;
 	}
 
-	// Read an int "server parameter" with env fallback and clamping.
-	int read_int_param(const std::string& key, int def)
-	{
-		std::string v = Server->getServerParameter(key);
-		if (v.empty())
-		{
-			const char* e = getenv(env_key(key).c_str());
-			if (e != NULL)
-				v = e;
-		}
-		if (v.empty())
-			return def;
-		return watoi(v);
-	}
-
 	std::string read_str_param(const std::string& key, const std::string& def)
 	{
 		std::string v = Server->getServerParameter(key);
@@ -125,105 +101,66 @@ namespace
 			return def;
 		return v;
 	}
-}
 
-#ifdef WITH_LIBGPIOD
-// Watches GPIO 26 for falling edges (active-low button with pull-up) and
-// notifies the gate on each press.
-class GpioWatcherThread : public IThread
-{
-public:
-	GpioWatcherThread(PhysicalGate* gate, std::string chip, unsigned int line)
-		: gate(gate), chip_name(chip), line_offset(line)
+	int read_int_param(const std::string& key, int def)
 	{
+		std::string v = read_str_param(key, std::string());
+		if (v.empty())
+			return def;
+		return watoi(v);
 	}
 
-	void operator()()
+	// Extracts a "key":"value" string from a flat JSON object. The daemon's
+	// replies are small and fixed-shape, so a full parser would be overkill.
+	std::string json_field(const std::string& src, const std::string& key)
 	{
-		struct gpiod_chip* chip = gpiod_chip_open_by_name(chip_name.c_str());
-		if (chip == NULL)
+		std::string pat = "\"" + key + "\"";
+		size_t p = src.find(pat);
+		if (p == std::string::npos)
+			return std::string();
+
+		p = src.find(':', p + pat.size());
+		if (p == std::string::npos)
+			return std::string();
+
+		p = src.find('"', p);
+		if (p == std::string::npos)
+			return std::string();
+
+		size_t end = src.find('"', p + 1);
+		if (end == std::string::npos)
+			return std::string();
+
+		return src.substr(p + 1, end - p - 1);
+	}
+
+	// The description ends up inside a JSON string literal.
+	std::string json_escape(const std::string& s)
+	{
+		std::string out;
+		out.reserve(s.size());
+		for (size_t i = 0; i < s.size(); ++i)
 		{
-			Server->Log("PhysicalGate: cannot open gpio chip '" + chip_name +
-				"'. Physical button DISABLED; destructive ops will time out.", LL_ERROR);
-			return;
-		}
-
-		struct gpiod_line* line = gpiod_chip_get_line(chip, line_offset);
-		if (line == NULL)
-		{
-			Server->Log("PhysicalGate: cannot get gpio line " + convert((int)line_offset), LL_ERROR);
-			gpiod_chip_close(chip);
-			return;
-		}
-
-		// Button to GND with internal pull-up -> falling edge on press.
-		if (gpiod_line_request_falling_edge_events_flags(line, "urbackup-physical-gate",
-				GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP) < 0)
-		{
-			Server->Log("PhysicalGate: cannot request edge events on gpio line " +
-				convert((int)line_offset) + " (errno=" + convert((int)errno) + ")", LL_ERROR);
-			gpiod_chip_close(chip);
-			return;
-		}
-
-		Server->Log("PhysicalGate: watching GPIO " + convert((int)line_offset) +
-			" on " + chip_name + " for physical confirmations.", LL_WARNING);
-
-		int64 last_press_ms = 0;
-		const int64 debounce_ms = 250;
-
-		while (!gate_stop())
-		{
-			struct timespec ts;
-			ts.tv_sec = 1;
-			ts.tv_nsec = 0;
-			int r = gpiod_line_event_wait(line, &ts);
-			if (r < 0)
+			unsigned char c = (unsigned char)s[i];
+			if (c == '"' || c == '\\')
 			{
-				Server->Log("PhysicalGate: gpio event wait error.", LL_WARNING);
-				continue;
+				out += '\\';
+				out += (char)c;
 			}
-			if (r == 0)
-				continue; // timeout, re-check stop flag
-
-			struct gpiod_line_event ev;
-			if (gpiod_line_event_read(line, &ev) < 0)
-				continue;
-
-			int64 now = Server->getTimeMS();
-			if (now - last_press_ms < debounce_ms)
-				continue; // debounce
-			last_press_ms = now;
-
-			gate->onButtonPressed();
+			else if (c >= 0x20)
+			{
+				out += (char)c;
+			}
 		}
-
-		gpiod_line_release(line);
-		gpiod_chip_close(chip);
+		if (out.size() > 512)
+			out.resize(512);
+		return out;
 	}
-
-private:
-	bool gate_stop();
-
-	PhysicalGate* gate;
-	std::string chip_name;
-	unsigned int line_offset;
-};
-#endif // WITH_LIBGPIOD
+}
 
 PhysicalGate::PhysicalGate()
-	: mutex(NULL), cond(NULL), enabled(false), timeout_ms(default_timeout_ms),
-	  press_count(0), pending_count(0), audit_warned(false),
-	  watcher_thread(NULL), watcher_stop(false)
+	: enabled(false), timeout_ms(default_timeout_ms), socket_path(default_socket)
 {
-}
-
-PhysicalGate::~PhysicalGate()
-{
-	if (cond != NULL)
-		Server->destroy(cond);
-	if (mutex != NULL)
-		Server->destroy(mutex);
 }
 
 void PhysicalGate::init()
@@ -232,8 +169,6 @@ void PhysicalGate::init()
 		return;
 
 	instance = new PhysicalGate();
-	instance->mutex = Server->createMutex();
-	instance->cond = Server->createCondition();
 
 	instance->timeout_ms = read_int_param("physical_gate_timeout_ms", default_timeout_ms);
 	if (instance->timeout_ms < min_timeout_ms)
@@ -241,47 +176,51 @@ void PhysicalGate::init()
 	if (instance->timeout_ms > max_timeout_ms)
 		instance->timeout_ms = max_timeout_ms;
 
-	instance->audit_log_path = read_str_param("physical_gate_audit_log", default_audit_log);
+	instance->socket_path = read_str_param("physical_gate_socket", default_socket);
 
-	// Gate is enabled unless explicitly disabled. This is the safe default for
-	// a Ransom Defender appliance: destructive ops require physical approval.
+	// Enabled unless explicitly disabled: the safe default for a Ransom
+	// Defender appliance is that destructive ops need physical approval.
 	std::string disabled = read_str_param("physical_gate_disabled", "false");
-	bool want_enabled = !(disabled == "true" || disabled == "1");
+	instance->enabled = !(disabled == "true" || disabled == "1");
 
-#ifdef WITH_LIBGPIOD
-	if (want_enabled)
+	if (!instance->enabled)
 	{
-		std::string chip = read_str_param("physical_gate_gpio_chip", default_gpio_chip);
-		int line = read_int_param("physical_gate_gpio_line", (int)default_gpio_line);
-		instance->enabled = true;
-		instance->watcher_thread = new GpioWatcherThread(instance, chip, (unsigned int)line);
-		Server->createThread(instance->watcher_thread, "physical gate");
-		Server->Log("PhysicalGate: ENABLED. Destructive operations require physical "
-			"button confirmation (timeout " + convert(instance->timeout_ms / 1000) + "s).", LL_WARNING);
+		Server->Log("PhysicalGate: explicitly DISABLED via configuration. "
+			"Destructive operations are NOT physically gated.", LL_WARNING);
+		return;
 	}
-	else
-	{
-		instance->enabled = false;
-		Server->Log("PhysicalGate: explicitly DISABLED via configuration.", LL_WARNING);
-	}
-#else
-	(void)want_enabled;
-	instance->enabled = false;
-	Server->Log("PhysicalGate: built WITHOUT libgpiod support; gate DISABLED. "
-		"Destructive operations are NOT physically gated.", LL_WARNING);
-#endif
 
-	instance->audit("init", "physical gate initialized, enabled=" +
-		std::string(instance->enabled ? "true" : "false"));
+	Server->Log("PhysicalGate: ENABLED via " + instance->socket_path +
+		" (timeout " + convert(instance->timeout_ms / 1000) + "s).", LL_WARNING);
+
+	// Probe once so a misconfigured or stopped daemon is visible at startup
+	// rather than at the first deletion attempt.
+	std::string response;
+	if (!instance->transact("{\"cmd\":\"status\"}", response, 5000))
+	{
+		Server->Log("PhysicalGate: helper daemon not reachable at " +
+			instance->socket_path + ". Destructive operations will be DENIED "
+			"until neobackup-gated is running.", LL_ERROR);
+		return;
+	}
+
+	std::string version = json_field(response, "version");
+	if (version != "1")
+	{
+		Server->Log("PhysicalGate: helper daemon speaks protocol version '" +
+			version + "', expected '1'. Destructive operations will be DENIED.",
+			LL_ERROR);
+		return;
+	}
+
+	Server->Log("PhysicalGate: helper daemon ready (device=" +
+		json_field(response, "device") + ", chip=" + json_field(response, "chip") + ").",
+		LL_WARNING);
 }
 
 void PhysicalGate::destroy()
 {
-	if (instance == NULL)
-		return;
-	instance->watcher_stop = true;
-	// Watcher thread polls the stop flag with a 1s timeout and exits on its own;
-	// it deletes itself via the thread pool semantics used by createThread.
+	delete instance;
 	instance = NULL;
 }
 
@@ -290,32 +229,86 @@ bool PhysicalGate::isEnabled()
 	return instance != NULL && instance->enabled;
 }
 
-void PhysicalGate::onButtonPressed()
+std::string PhysicalGate::lastDenyReason()
 {
-	IScopedLock lock(mutex);
-	++press_count;
-	bool had_pending = pending_count > 0;
-	cond->notify_all();
-	Server->Log("PhysicalGate: physical button pressed (press #" +
-		convert((int)press_count) + ").", LL_WARNING);
+	if (instance == NULL)
+		return std::string();
+	return instance->deny_reason;
+}
 
-	// Bright green when a request is waiting (it will now commit), cyan otherwise.
-	if (had_pending)
+bool PhysicalGate::transact(const std::string& request, std::string& response,
+	int timeout_ms_)
+{
+	struct sockaddr_un addr;
+	if (socket_path.size() + 1 > sizeof(addr.sun_path))
 	{
-		console_banner("1;32",
-			">>> PHYSICAL BUTTON PRESSED <<<",
-			"Pending destructive operation APPROVED.",
-			"Committing now...",
-			"");
+		Server->Log("PhysicalGate: socket path too long: " + socket_path, LL_ERROR);
+		return false;
 	}
-	else
+
+	int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (fd < 0)
 	{
-		console_banner("1;36",
-			">>> PHYSICAL BUTTON PRESSED <<<",
-			"No operation is pending right now.",
-			"(press registered)",
-			"");
+		Server->Log("PhysicalGate: socket() failed (errno=" +
+			convert((int)errno) + ").", LL_ERROR);
+		return false;
 	}
+
+	// The daemon blocks for the whole button window, so the read timeout must
+	// cover it. Connect stays short: the socket is local and either there or not.
+	struct timeval tv;
+	tv.tv_sec = timeout_ms_ / 1000;
+	tv.tv_usec = (timeout_ms_ % 1000) * 1000;
+	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	memcpy(addr.sun_path, socket_path.c_str(), socket_path.size());
+
+	if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+	{
+		Server->Log("PhysicalGate: cannot connect to " + socket_path +
+			" (errno=" + convert((int)errno) + ").", LL_ERROR);
+		close(fd);
+		return false;
+	}
+
+	std::string line = request + "\n";
+	size_t sent = 0;
+	while (sent < line.size())
+	{
+		ssize_t n = write(fd, line.data() + sent, line.size() - sent);
+		if (n <= 0)
+		{
+			Server->Log("PhysicalGate: write to helper daemon failed.", LL_ERROR);
+			close(fd);
+			return false;
+		}
+		sent += (size_t)n;
+	}
+
+	response.clear();
+	char buf[512];
+	while (response.find('\n') == std::string::npos)
+	{
+		ssize_t n = read(fd, buf, sizeof(buf));
+		if (n <= 0)
+			break;
+		response.append(buf, (size_t)n);
+		if (response.size() > 8192)
+			break;
+	}
+
+	close(fd);
+
+	if (response.empty())
+	{
+		Server->Log("PhysicalGate: no response from helper daemon.", LL_ERROR);
+		return false;
+	}
+
+	return true;
 }
 
 PhysicalGate::EGateResult PhysicalGate::requestApproval(const std::string& description)
@@ -328,86 +321,69 @@ PhysicalGate::EGateResult PhysicalGate::requestApproval(const std::string& descr
 
 PhysicalGate::EGateResult PhysicalGate::doRequestApproval(const std::string& description)
 {
-	IScopedLock lock(mutex);
+	deny_reason.clear();
 
-	unsigned int start_count = press_count;
-	int64 deadline = Server->getTimeMS() + timeout_ms;
-
-	audit("pending", description);
 	Server->Log("PhysicalGate: PENDING destructive request awaiting physical "
 		"confirmation: " + description, LL_WARNING);
 
-	// Bright yellow: a destructive op is now blocked, press the button to allow it.
 	console_banner("1;33",
 		"*** PHYSICAL CONFIRMATION REQUIRED ***",
 		description,
 		"PRESS THE BUTTON to approve, or wait to cancel.",
 		"timeout: " + convert(timeout_ms / 1000) + "s");
 
-	++pending_count;
+	std::string request = "{\"cmd\":\"await_approval\",\"timeout_ms\":" +
+		convert(timeout_ms) + ",\"desc\":\"" + json_escape(description) + "\"}";
 
-	while (press_count == start_count)
+	std::string response;
+	if (!transact(request, response, timeout_ms + socket_grace_ms))
 	{
-		int64 remaining = deadline - Server->getTimeMS();
-		if (remaining <= 0)
-		{
-			--pending_count;
-			audit("timeout", description);
-			Server->Log("PhysicalGate: TIMEOUT, discarding destructive request: " +
-				description, LL_WARNING);
-			console_banner("1;31",
-				"### TIMEOUT - REQUEST DISCARDED ###",
-				description,
-				"No button press in time. Nothing was deleted.",
-				"");
-			return EGateResult_Timeout;
-		}
-		cond->wait(&lock, (int)remaining);
+		deny_reason = "gate_unreachable";
+		Server->Log("PhysicalGate: DENIED (helper daemon unreachable): " +
+			description, LL_ERROR);
+		console_banner("1;31",
+			"### GATE UNAVAILABLE - DENIED ###",
+			description,
+			"neobackup-gated is not responding. Nothing deleted.",
+			"");
+		return EGateResult_Denied;
 	}
 
-	--pending_count;
-	audit("approved", description);
-	Server->Log("PhysicalGate: APPROVED by physical button: " + description, LL_WARNING);
-	console_banner("1;32",
-		"=== APPROVED - COMMITTING ===",
+	std::string result = json_field(response, "result");
+
+	if (result == "approved")
+	{
+		Server->Log("PhysicalGate: APPROVED by physical button: " + description,
+			LL_WARNING);
+		console_banner("1;32",
+			"=== APPROVED - COMMITTING ===",
+			description,
+			"Button pressed and chip authenticated.",
+			"");
+		return EGateResult_Approved;
+	}
+
+	if (result == "timeout")
+	{
+		Server->Log("PhysicalGate: TIMEOUT, discarding destructive request: " +
+			description, LL_WARNING);
+		console_banner("1;31",
+			"### TIMEOUT - REQUEST DISCARDED ###",
+			description,
+			"No button press in time. Nothing was deleted.",
+			"");
+		return EGateResult_Timeout;
+	}
+
+	deny_reason = json_field(response, "reason");
+	if (deny_reason.empty())
+		deny_reason = "gate_denied";
+
+	Server->Log("PhysicalGate: DENIED (" + deny_reason + "): " + description, LL_ERROR);
+	console_banner("1;31",
+		"### DENIED - " + deny_reason + " ###",
 		description,
-		"Physical confirmation accepted.",
+		"Physical confirmation could not be established.",
 		"");
-	return EGateResult_Approved;
+	return EGateResult_Denied;
 }
-
-void PhysicalGate::audit(const std::string& event, const std::string& description)
-{
-	// Append-only audit log with fsync, per spec (§6 Audit log).
-	FILE* f = fopen(audit_log_path.c_str(), "a");
-	if (f == NULL)
-	{
-		// Warn once so a missing/unwritable audit log is visible in the main log.
-		if (!audit_warned)
-		{
-			audit_warned = true;
-			Server->Log("PhysicalGate: cannot write audit log '" + audit_log_path +
-				"' (errno=" + convert((int)errno) + "). Ensure it exists and is "
-				"owned by the server user.", LL_WARNING);
-		}
-		return;
-	}
-
-	time_t now = time(NULL);
-	struct tm tmv;
-	localtime_r(&now, &tmv);
-	char tbuf[32];
-	strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", &tmv);
-
-	fprintf(f, "%s\t%s\t%s\n", tbuf, event.c_str(), description.c_str());
-	fflush(f);
-	fsync(fileno(f));
-	fclose(f);
-}
-
-#ifdef WITH_LIBGPIOD
-bool GpioWatcherThread::gate_stop()
-{
-	return PhysicalGate::instance == NULL || PhysicalGate::instance->watcher_stop;
-}
-#endif

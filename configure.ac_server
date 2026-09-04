@@ -120,25 +120,6 @@ else
 	AM_CONDITIONAL(WITH_ZSTD, true)
 fi
 
-# NeoBackup Ransom Defender: physical confirmation gate via libgpiod (GPIO 26).
-AC_ARG_ENABLE([libgpiod],
-     AS_HELP_STRING([--disable-libgpiod], [Do not use libgpiod for the physical confirmation gate (gate becomes a no-op).]))
-if test "x$enable_libgpiod" != "xno"
-then
-	AC_CHECK_LIB(gpiod, gpiod_chip_open_by_name, [HAS_GPIOD_LIB=1])
-	AC_CHECK_HEADER(gpiod.h, [HAS_GPIOD_HEADER=1])
-
-	if test "x$HAS_GPIOD_LIB" = "x1" && test "x$HAS_GPIOD_HEADER" = "x1"
-	then
-		AM_CONDITIONAL(WITH_LIBGPIOD, true)
-	else
-		AC_MSG_WARN([libgpiod not present. Physical confirmation gate will be a no-op. Install libgpiod-dev or use --disable-libgpiod to silence this.])
-		AM_CONDITIONAL(WITH_LIBGPIOD, false)
-	fi
-else
-	AM_CONDITIONAL(WITH_LIBGPIOD, false)
-fi
-
 P_SUBDIRS="snapshot_helper fsimageplugin httpserver urbackupserver"
 
 AM_CONDITIONAL(WITH_URLPLUGIN, test "x$with_mail" != "xno")

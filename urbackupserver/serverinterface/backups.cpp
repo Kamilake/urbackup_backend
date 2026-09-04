@@ -1621,6 +1621,11 @@ ACTION_IMPL(backups)
 							{
 								ret.set("delete_now_err", "physical_confirmation_timeout");
 							}
+							else if (gate == PhysicalGate::EGateResult_Denied)
+							{
+								ret.set("delete_now_err", "physical_confirmation_denied");
+								ret.set("physical_gate_reason", PhysicalGate::lastDenyReason());
+							}
 							else
 							{
 								ServerSettings settings(db);

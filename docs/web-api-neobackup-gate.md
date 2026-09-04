@@ -58,14 +58,26 @@ UI 측 필수 처리:
 
 | 응답 | 의미 | UI 처리 |
 |------|------|---------|
-| 응답 본문에 `delete_now_err` **없음** | 승인됨(버튼 눌림) → 삭제 실행됨 | ✅ "삭제 완료" — 초록 |
+| 응답 본문에 `delete_now_err` **없음** | 승인됨(버튼 눌림 + 칩 인증) → 삭제 실행됨 | ✅ "삭제 완료" — 초록 |
 | `{"delete_now_err": "physical_confirmation_timeout"}` | 시간 내 버튼 안 눌림 → **삭제 안 됨** | ⏱️ "물리 확인 시간 초과, 백업은 그대로 보존됨" — 노랑/회색 |
+| `{"delete_now_err": "physical_confirmation_denied", "physical_gate_reason": "..."}` | 게이트가 승인을 거부 → **삭제 안 됨** | 🚫 사유별 안내 — 빨강 (아래 표) |
 | `{"delete_now_err": "delete_file_backup_failed"}` | 승인됐으나 실제 삭제 실패 | ❌ 오류 — 빨강 |
 | `{"error": 1}` | 세션 만료 | 재로그인 |
 
-> **게이트 비활성/미빌드 시**: libgpiod 없이 빌드했거나 `physical_gate_disabled=true`면 게이트는
-> no-op이라 `requestApproval`이 즉시 통과한다. 응답이 바로 오고 `delete_now_err`도 없다.
-> UI는 "대기 화면"을 띄웠더라도 응답이 즉시 오면 자연스럽게 완료로 넘어가도록 만들면 둘 다 커버된다.
+#### `physical_gate_reason` 값
+
+| 값 | 의미 | 안내 문구 예시 |
+|----|------|----------------|
+| `chip_auth_failed` | 버튼은 눌렸으나 보안칩 인증 실패 | "확인 장치가 정품으로 인증되지 않았습니다" |
+| `device_gone` | 대기 중 USB 장치 분리/무응답 | "확인 장치 연결이 끊어졌습니다" |
+| `gate_unreachable` | 헬퍼 데몬(`neobackup-gated`) 미기동 | "확인 서비스가 실행 중이 아닙니다" |
+| `busy` | 다른 승인 요청이 이미 대기 중 | "다른 확인 작업이 진행 중입니다" |
+
+어느 경우든 **백업은 삭제되지 않는다**(fail-closed). 이는 버그가 아니라 설계다.
+
+> **게이트 비활성 시**: `physical_gate_disabled=true` 면 `requestApproval`이 즉시 통과한다.
+> 응답이 바로 오고 `delete_now_err`도 없다. UI는 "대기 화면"을 띄웠더라도 응답이 즉시 오면
+> 자연스럽게 완료로 넘어가도록 만들면 둘 다 커버된다.
 > (게이트 활성 여부를 알려주는 별도 status 필드는 **아직 없다** — 4장 참고.)
 
 ---
