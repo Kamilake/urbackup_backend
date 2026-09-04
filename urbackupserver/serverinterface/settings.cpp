@@ -557,40 +557,38 @@ namespace
 {
 	// Lowering any of these makes the cleanup thread delete backups later on,
 	// without any deletion API ever being called. Gate that like a deletion.
-	const char* retention_keys[] = {
-		"max_file_incr", "max_file_full", "max_image_incr", "max_image_full",
-		"min_file_incr", "min_file_full", "min_image_incr", "min_image_full"
-	};
-
-	// Returns a description of the first retention value that POST would shrink,
-	// or an empty string when nothing shrinks.
+	//
+	// Compared against the currently effective values, not the stored rows:
+	// with nothing stored yet the defaults apply, and a first save that drops
+	// below them would otherwise slip through ungated.
 	std::string findRetentionShrink(int t_clientid, str_map& POST, IDatabase* db)
 	{
-		IQuery* q = db->Prepare("SELECT value FROM settings_db.settings WHERE key=? AND clientid=?");
+		ServerSettings current(db, t_clientid);
+		SSettings* cur = current.getSettings();
 
-		for (size_t i = 0; i < sizeof(retention_keys) / sizeof(retention_keys[0]); ++i)
+		const struct { const char* key; int old_val; } retention[] = {
+			{ "max_file_incr",  cur->max_file_incr },
+			{ "max_file_full",  cur->max_file_full },
+			{ "max_image_incr", cur->max_image_incr },
+			{ "max_image_full", cur->max_image_full },
+			{ "min_file_incr",  cur->min_file_incr },
+			{ "min_file_full",  cur->min_file_full },
+			{ "min_image_incr", cur->min_image_incr },
+			{ "min_image_full", cur->min_image_full }
+		};
+
+		for (size_t i = 0; i < sizeof(retention) / sizeof(retention[0]); ++i)
 		{
-			const std::string key = retention_keys[i];
-			str_map::iterator it = POST.find(key);
+			str_map::iterator it = POST.find(retention[i].key);
 			if (it == POST.end())
 				continue;
 
-			q->Bind(key);
-			q->Bind(t_clientid);
-			db_results res = q->Read();
-			q->Reset();
-
-			// No stored value yet means the default applies; leave it to the
-			// server defaults rather than guessing what "shrinking" means.
-			if (res.empty())
-				continue;
-
-			int old_val = watoi(res[0]["value"]);
 			int new_val = watoi(UnescapeSQLString(it->second));
 
-			if (new_val < old_val)
+			if (new_val < retention[i].old_val)
 			{
-				return key + " " + convert(old_val) + " -> " + convert(new_val);
+				return std::string(retention[i].key) + " " +
+					convert(retention[i].old_val) + " -> " + convert(new_val);
 			}
 		}
 
@@ -1177,11 +1175,33 @@ ACTION_IMPL(settings)
 		{
 			int userid=watoi(POST["userid"]);
 
-			IQuery *q=db->Prepare("DELETE FROM settings_db.si_users WHERE id=?");
-			q->Bind(userid);
-			q->Write();
-			q->Reset();
-			ret.set("removeuser", true);
+			IQuery *q_name=db->Prepare("SELECT name FROM settings_db.si_users WHERE id=?");
+			q_name->Bind(userid);
+			db_results res_name=q_name->Read();
+			q_name->Reset();
+			std::string username = res_name.empty() ? convert(userid) : res_name[0]["name"];
+
+			// Deleting the last admin locks everyone out, and there is no undo.
+			PhysicalGate::EGateResult gate = PhysicalGate::requestApproval(
+				"remove user '" + username + "'");
+
+			if (gate == PhysicalGate::EGateResult_Timeout)
+			{
+				ret.set("removeuser_err", "physical_confirmation_timeout");
+			}
+			else if (gate == PhysicalGate::EGateResult_Denied)
+			{
+				ret.set("removeuser_err", "physical_confirmation_denied");
+				ret.set("physical_gate_reason", PhysicalGate::lastDenyReason());
+			}
+			else
+			{
+				IQuery *q=db->Prepare("DELETE FROM settings_db.si_users WHERE id=?");
+				q->Bind(userid);
+				q->Write();
+				q->Reset();
+				ret.set("removeuser", true);
+			}
 			sa="listusers";
 		}
 		if(sa=="listusers" && helper.getRights("usermod")=="all" )
