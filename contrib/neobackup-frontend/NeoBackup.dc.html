@@ -91,8 +91,9 @@
       </sc-for>
     </nav>
     <div style="border-top:1px solid #1b2230;padding-top:12px;display:flex;align-items:center;gap:10px">
-      <div style="width:30px;height:30px;border-radius:8px;background:#1c222d;display:grid;place-items:center;font-size:12px;font-weight:600;color:#97a1b2">A</div>
-      <div style="flex:1;line-height:1.25"><div style="font-size:12.5px;font-weight:500">admin</div><div style="font-size:10.5px;color:#5b6677">전체 권한</div></div>
+      <div style="width:30px;height:30px;border-radius:8px;background:#1c222d;display:grid;place-items:center;font-size:12px;font-weight:600;color:#97a1b2">{{ meInitial }}</div>
+      <div style="flex:1;line-height:1.25;min-width:0"><div style="font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ meName }}</div><div style="font-size:10.5px;color:#5b6677">{{ meRole }}</div></div>
+      <sc-if value="{{ canChangePw }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openPw }}" title="비밀번호 변경" style="background:none;border:none;color:#5b6677;cursor:pointer;font-size:16px;padding:4px" style-hover="color:#e9edf4"><i class="ph ph-key"></i></button></sc-if>
       <button onClick="{{ logout }}" title="로그아웃" style="background:none;border:none;color:#5b6677;cursor:pointer;font-size:17px;padding:4px" style-hover="color:#e5484d"><i class="ph ph-sign-out"></i></button>
     </div>
   </aside>
@@ -378,6 +379,47 @@
 </div>
 </sc-if>
 
+<!-- ============ CHANGE PASSWORD MODAL ============ -->
+<sc-if value="{{ pw.open }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:46;display:flex;align-items:center;justify-content:center;background:rgba(4,6,9,.78);backdrop-filter:blur(6px);animation:nb-fadeup .2s ease" onClick="{{ closePw }}">
+    <div style="width:420px;max-width:92vw;background:#10141b;border:1px solid #1b2230;border-radius:16px;padding:26px 28px;box-shadow:0 30px 80px rgba(0,0,0,.6)" onClick="{{ stop }}">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
+        <div style="width:34px;height:34px;border-radius:9px;background:color-mix(in srgb,var(--ac,#3ddc84),transparent 86%);border:1px solid color-mix(in srgb,var(--ac,#3ddc84),transparent 62%);display:grid;place-items:center"><i class="ph ph-key" style="font-size:17px;color:var(--ac,#3ddc84)"></i></div>
+        <div style="flex:1;line-height:1.25"><div style="font-weight:600;font-size:15px">비밀번호 변경</div><div style="font-size:11.5px;color:#5b6677;font-family:'IBM Plex Mono',monospace">{{ meName }}</div></div>
+      </div>
+
+      <sc-if value="{{ pw.done }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:18px;text-align:center;padding:14px 0">
+          <i class="ph-fill ph-check-circle" style="font-size:38px;color:var(--ac,#3ddc84)"></i>
+          <div style="margin-top:12px;font-size:14px;font-weight:500">비밀번호가 변경되었습니다</div>
+          <div style="margin-top:6px;font-size:12px;color:#97a1b2;line-height:1.6">다음 로그인부터 새 비밀번호를 사용하세요.</div>
+          <button onClick="{{ closePw }}" style="margin-top:20px;border:none;background:var(--ac,#3ddc84);color:#06210f;border-radius:10px;padding:11px 28px;font-size:13px;font-weight:600;cursor:pointer">확인</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pw.form }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:18px">
+          <label style="display:block;font-size:12px;color:#97a1b2;margin-bottom:7px">현재 비밀번호</label>
+          <div style="display:flex;align-items:center;gap:10px;background:#11151c;border:1px solid #232b38;border-radius:9px;padding:0 13px;margin-bottom:14px"><i class="ph ph-lock-simple" style="color:#5b6677;font-size:16px"></i><input id="nb_pw_cur" type="password" autoComplete="current-password" style="flex:1;background:none;border:none;color:#e9edf4;font-size:14px;padding:11px 0"></div>
+
+          <label style="display:block;font-size:12px;color:#97a1b2;margin-bottom:7px">새 비밀번호</label>
+          <div style="display:flex;align-items:center;gap:10px;background:#11151c;border:1px solid #232b38;border-radius:9px;padding:0 13px;margin-bottom:14px"><i class="ph ph-lock-key" style="color:#5b6677;font-size:16px"></i><input id="nb_pw_new" type="password" autoComplete="new-password" style="flex:1;background:none;border:none;color:#e9edf4;font-size:14px;padding:11px 0"></div>
+
+          <label style="display:block;font-size:12px;color:#97a1b2;margin-bottom:7px">새 비밀번호 확인</label>
+          <div style="display:flex;align-items:center;gap:10px;background:#11151c;border:1px solid #232b38;border-radius:9px;padding:0 13px"><i class="ph ph-lock-key" style="color:#5b6677;font-size:16px"></i><input id="nb_pw_new2" type="password" autoComplete="new-password" onKeyDown="{{ onPwKey }}" style="flex:1;background:none;border:none;color:#e9edf4;font-size:14px;padding:11px 0"></div>
+
+          <sc-if value="{{ pw.err }}" hint-placeholder-val="{{ true }}"><div style="margin-top:14px;font-size:12.5px;color:#e5484d;display:flex;align-items:center;gap:7px"><i class="ph ph-warning-circle"></i><span>{{ pw.err }}</span></div></sc-if>
+
+          <div style="display:flex;gap:10px;margin-top:22px">
+            <button onClick="{{ closePw }}" style="flex:1;border:1px solid #232b38;background:#161b24;color:#cfd6e1;border-radius:10px;padding:11px;font-size:13.5px;font-weight:500;cursor:pointer" style-hover="background:#1c222d">취소</button>
+            <button onClick="{{ submitPw }}" style="{{ pw.submitStyle }}">{{ pw.submitLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ============ PHYSICAL GATE MODAL ============ -->
 <sc-if value="{{ gate.open }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(4,6,9,.78);backdrop-filter:blur(6px);animation:nb-fadeup .2s ease">
@@ -477,6 +519,8 @@ class Component extends DCLogic {
     this.state={
       authed:false,
       loginErr:null,
+      username:'',
+      pw:{open:false, busy:false, err:null, done:false},
       view: this.props.startView || 'dashboard',
       clients:[], progress:[], lastacts:[], bk:{}, logs:[], usage:[], users:[],
       bkClient:null, browsePath:null, browseBackupid:null, fileList:[],
@@ -493,7 +537,11 @@ class Component extends DCLogic {
     // 실서버: 저장된 세션이 있으면 status 한 번 찔러 유효성 확인 후 자동 입장.
     if(this._ses){
       this.api('status').then(d=>{
-        if(d && d.error!==1){ this.setState({authed:true}); this.loadAll(); this.startPolling(); }
+        if(d && d.error!==1){
+          let u=''; try{ u=localStorage.getItem('nb_user')||''; }catch(e){}
+          this.setState({authed:true, username:u});
+          this.loadAll(); this.startPolling();
+        }
       }).catch(()=>{});
     }
   }
@@ -524,9 +572,10 @@ class Component extends DCLogic {
     clearInterval(this._poll);
     this._poll=setInterval(()=>{ this.loadStatus(); this.loadProgress(); }, 3000);
   }
-  toLogin(){ this._ses=null; this._rights=null; try{localStorage.removeItem('nb_ses');}catch(e){}
+  toLogin(){ this._ses=null; this._rights=null;
+    try{localStorage.removeItem('nb_ses'); localStorage.removeItem('nb_user');}catch(e){}
     clearInterval(this._poll); this.stopLive();
-    this.setState({authed:false, livelog:[], liveSource:null}); }
+    this.setState({authed:false, username:'', livelog:[], liveSource:null, pw:{open:false,busy:false,err:null,done:false}}); }
 
   // ===== live API: live log long-poll =====
   // 실행 중 백업의 라이브 로그를 `livelog` 액션으로 롤폴링한다.
@@ -664,17 +713,27 @@ class Component extends DCLogic {
   onLoginKey(e){ if(e && e.key==='Enter') this.doLogin(); }
   login(){ this.doLogin(); }
 
-  hashPassword(password, salt, rnd, rounds){
+  // 서버가 si_users.password_md5 에 저장하는 값과 동일한 해시를 만든다.
+  // (Helper::checkPassword: PBKDF2-SHA256(key=MD5(salt+pw) 의 raw 바이트, salt=salt 문자열))
+  storedHash(password, salt, rounds){
     const CJS=window.CryptoJS;
     if(!CJS) throw new Error('crypto-js 미로드');
-    let pwmd5;
-    if(rounds>0){
-      pwmd5=CJS.PBKDF2(password, CJS.enc.Hex.parse(salt),
-        {keySize:256/32, iterations:rounds, hasher:CJS.algo.SHA256}).toString();
-    }else{
-      pwmd5=CJS.MD5(salt+password).toString();
-    }
-    return CJS.MD5(rnd+pwmd5).toString();
+    const md5=CJS.MD5(salt+password).toString();
+    if(!(rounds>0)) return md5;
+    return CJS.PBKDF2(CJS.enc.Hex.parse(md5), CJS.enc.Utf8.parse(salt),
+      {keySize:256/32, iterations:rounds, hasher:CJS.algo.SHA256}).toString();
+  }
+
+  hashPassword(password, salt, rnd, rounds){
+    const CJS=window.CryptoJS;
+    return CJS.MD5(rnd+this.storedHash(password, salt, rounds)).toString();
+  }
+
+  randomSalt(){
+    const chars='0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz';
+    const a=new Uint32Array(50); crypto.getRandomValues(a);
+    let s=''; for(let i=0;i<50;i++) s+=chars.charAt(a[i]%chars.length);
+    return s;
   }
 
   async doLogin(){
@@ -690,7 +749,7 @@ class Component extends DCLogic {
           if(r.session) this._ses=r.session;
           this._rights=r;
           try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
-          this.setState({authed:true, loginErr:null});
+          this.setState({authed:true, loginErr:null, username:''});
           await this.loadAll(); this.startPolling();
           return;
         }
@@ -711,8 +770,8 @@ class Component extends DCLogic {
       if(r.success){
         if(r.session) this._ses=r.session;
         this._rights=r;
-        try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
-        this.setState({authed:true, loginErr:null});
+        try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); localStorage.setItem('nb_user', u); }catch(e){}
+        this.setState({authed:true, loginErr:null, username:u});
         await this.loadAll();
         this.startPolling();
       }else if(r.error===2){
@@ -723,8 +782,8 @@ class Component extends DCLogic {
         // LDAP: 평문 전송 경로
         const r2=await this.api('login',{username:u, password:p, plainpw:'1'});
         if(r2.success){ if(r2.session) this._ses=r2.session; this._rights=r2;
-          try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); }catch(e){}
-          this.setState({authed:true, loginErr:null}); await this.loadAll(); this.startPolling();
+          try{ if(this._ses) localStorage.setItem('nb_ses', this._ses); localStorage.setItem('nb_user', u); }catch(e){}
+          this.setState({authed:true, loginErr:null, username:u}); await this.loadAll(); this.startPolling();
         }else this.setState({loginErr:'LDAP 인증 실패'});
       }else{
         this.setState({loginErr:'로그인할 수 없습니다'});
@@ -736,6 +795,47 @@ class Component extends DCLogic {
 
   async logout(){
     this.toLogin();
+  }
+
+  // ---- 자기 자신 비밀번호 변경 (sa=changepw&userid=own) ----
+  openPw(){ this.setState({pw:{open:false,busy:false,err:null,done:false}},
+    ()=>this.setState({pw:{open:true,busy:false,err:null,done:false}})); }
+  closePw(){ this.setState({pw:{open:false,busy:false,err:null,done:false}}); }
+  onPwKey(e){ if(e && e.key==='Enter') this.doChangePw(); }
+  _pwErr(msg){ this.setState({pw:{open:true,busy:false,err:msg,done:false}}); }
+
+  async doChangePw(){
+    if(this.state.pw.busy) return;
+    const cur=(document.getElementById('nb_pw_cur')||{}).value||'';
+    const n1=(document.getElementById('nb_pw_new')||{}).value||'';
+    const n2=(document.getElementById('nb_pw_new2')||{}).value||'';
+    if(!cur) return this._pwErr('현재 비밀번호를 입력하세요');
+    if(!n1) return this._pwErr('새 비밀번호를 입력하세요');
+    if(n1!==n2) return this._pwErr('새 비밀번호가 서로 다릅니다');
+    if(n1===cur) return this._pwErr('현재 비밀번호와 동일합니다');
+
+    this.setState({pw:{open:true,busy:true,err:null,done:false}});
+    try{
+      // 1) 현재 비밀번호는 챌린지·응답으로 증명 (salt 가 세션의 rnd 도 새로 발급)
+      const s=await this.api('salt',{username:this.state.username||''});
+      if(s.error===3) return this._pwErr('잠시 후 다시 시도하세요 (rate limit)');
+      if(s.error===1) return this.toLogin();
+      if(s.error===0) return this._pwErr('사용자를 찾을 수 없습니다');
+      const rounds=+s.pbkdf2_rounds||0;
+      const old_pw=this.hashPassword(cur, s.salt||'', s.rnd||'', rounds);
+
+      // 2) 새 비밀번호는 새 salt 로 최종 저장형 해시를 만들어 보낸다.
+      //    서버는 pbkdf2 를 한 번 더 씌우므로 여기서는 MD5(salt+pw) 까지만.
+      const salt=this.randomSalt();
+      const pwmd5=window.CryptoJS.MD5(salt+n1).toString();
+
+      const d=await this.api('settings',{sa:'changepw', userid:'own', salt, pwmd5, old_pw});
+      if(d.error===1) return this.toLogin();
+      if(d.old_pw_wrong) return this._pwErr('현재 비밀번호가 틀립니다');
+      if(!d.change_ok) return this._pwErr('변경 권한이 없거나 요청이 거부되었습니다');
+
+      this.setState({pw:{open:true,busy:false,err:null,done:true}});
+    }catch(e){ this._pwErr('서버에 연결할 수 없습니다'); }
   }
 
   // ---- helpers ----
@@ -1048,6 +1148,16 @@ class Component extends DCLogic {
     const gateToggleStyle=`width:46px;height:26px;border:none;border-radius:20px;cursor:pointer;position:relative;padding:0;background:${S.gateEnabled?ac:'#232b38'};transition:background .15s`;
     const gateKnobStyle=`position:absolute;top:3px;left:${S.gateEnabled?'23px':'3px'};width:20px;height:20px;border-radius:50%;background:#06210f;transition:left .15s;display:block`;
 
+    // current user / change password
+    // 익명 세션(등록 사용자 0명)은 si_users 행이 없어 changepw 대상이 없다 → 숨김.
+    const meName=S.username||'anonymous';
+    const meInitial=meName[0].toUpperCase();
+    const meRole=S.username?'로그인됨':'익명 세션';
+    const canChangePw=!!S.username;
+    const pwv={...S.pw, form:!S.pw.done,
+      submitLabel:S.pw.busy?'변경 중…':'변경',
+      submitStyle:`flex:1;border:none;border-radius:10px;padding:11px;font-size:13.5px;font-weight:600;color:#06210f;background:${ac};opacity:${S.pw.busy?'.6':'1'};cursor:${S.pw.busy?'default':'pointer'}`};
+
     // gate modal copy
     const g=S.gate;
     let gate={open:false};
@@ -1096,6 +1206,9 @@ class Component extends DCLogic {
       gateToggleStyle, gateKnobStyle, toggleGate:()=>this.setState(s=>({gateEnabled:!s.gateEnabled})),
       onTimeout:(e)=>this.setState({gateTimeout:+e.target.value}),
       users:S.users.map(u=>({...u,initial:u.name[0].toUpperCase()})),
+      meName, meInitial, meRole, canChangePw,
+      pw:pwv, openPw:()=>this.openPw(), closePw:()=>this.closePw(),
+      submitPw:()=>this.doChangePw(), onPwKey:(e)=>this.onPwKey(e),
       gate,
     };
   }
