@@ -29,6 +29,7 @@
 #include "../server_archive.h"
 #include "../dao/ServerBackupDao.h"
 #include "../server.h"
+#include "../PhysicalGate.h"
 
 extern IUrlFactory *url_fak;
 extern ICryptoFactory *crypto_fak;
@@ -552,6 +553,80 @@ void updateClientSettings(int t_clientid, str_map &POST, IDatabase *db)
 	}
 }
 
+namespace
+{
+	// Lowering any of these makes the cleanup thread delete backups later on,
+	// without any deletion API ever being called. Gate that like a deletion.
+	const char* retention_keys[] = {
+		"max_file_incr", "max_file_full", "max_image_incr", "max_image_full",
+		"min_file_incr", "min_file_full", "min_image_incr", "min_image_full"
+	};
+
+	// Returns a description of the first retention value that POST would shrink,
+	// or an empty string when nothing shrinks.
+	std::string findRetentionShrink(int t_clientid, str_map& POST, IDatabase* db)
+	{
+		IQuery* q = db->Prepare("SELECT value FROM settings_db.settings WHERE key=? AND clientid=?");
+
+		for (size_t i = 0; i < sizeof(retention_keys) / sizeof(retention_keys[0]); ++i)
+		{
+			const std::string key = retention_keys[i];
+			str_map::iterator it = POST.find(key);
+			if (it == POST.end())
+				continue;
+
+			q->Bind(key);
+			q->Bind(t_clientid);
+			db_results res = q->Read();
+			q->Reset();
+
+			// No stored value yet means the default applies; leave it to the
+			// server defaults rather than guessing what "shrinking" means.
+			if (res.empty())
+				continue;
+
+			int old_val = watoi(res[0]["value"]);
+			int new_val = watoi(UnescapeSQLString(it->second));
+
+			if (new_val < old_val)
+			{
+				return key + " " + convert(old_val) + " -> " + convert(new_val);
+			}
+		}
+
+		return std::string();
+	}
+
+	// True when the caller may proceed. Sets the gate error on ret otherwise.
+	bool gateRetentionChange(int t_clientid, str_map& POST, IDatabase* db, JSON::Object& ret)
+	{
+		std::string shrink = findRetentionShrink(t_clientid, POST, db);
+		if (shrink.empty())
+			return true;
+
+		std::string scope = t_clientid > 0
+			? ("client id=" + convert(t_clientid))
+			: "global";
+
+		PhysicalGate::EGateResult gate = PhysicalGate::requestApproval(
+			"shrink retention (" + scope + "): " + shrink);
+
+		if (gate == PhysicalGate::EGateResult_Timeout)
+		{
+			ret.set("settings_err", "physical_confirmation_timeout");
+			return false;
+		}
+		if (gate == PhysicalGate::EGateResult_Denied)
+		{
+			ret.set("settings_err", "physical_confirmation_denied");
+			ret.set("physical_gate_reason", PhysicalGate::lastDenyReason());
+			return false;
+		}
+
+		return true;
+	}
+}
+
 bool updateArchiveSettings(int clientid, IDatabase *db)
 {
 	bool ret = true;
@@ -928,7 +1003,11 @@ ACTION_IMPL(settings)
 			}
 			if(r_ok)
 			{			
-				if (sa == "clientsettings_save")
+				if (sa == "clientsettings_save" && !gateRetentionChange(t_clientid, POST, db, ret))
+				{
+					sa = "clientsettings";
+				}
+				else if (sa == "clientsettings_save")
 				{
 					db->BeginWriteTransaction();
 					updateClientSettings(t_clientid, POST, db);
@@ -1141,7 +1220,11 @@ ACTION_IMPL(settings)
 		
 		if(helper.getRights("general_settings")=="all")
 		{
-			if(sa=="general_save")
+			if(sa=="general_save" && !gateRetentionChange(0, POST, db, ret))
+			{
+				sa="general";
+			}
+			else if(sa=="general_save")
 			{
 				ServerSettings serv_settings(db);
 				db->BeginWriteTransaction();

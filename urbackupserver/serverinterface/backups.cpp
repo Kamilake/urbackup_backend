@@ -1603,9 +1603,26 @@ ACTION_IMPL(backups)
 					if (CURRP.find("delete_now") != CURRP.end())
 					{
 						int delete_now_id = watoi(CURRP["delete_now"]);
-						if (delete_now_id < 0)
-						{
+						bool is_image = delete_now_id < 0;
+						if (is_image)
 							delete_now_id *= -1;
+
+						PhysicalGate::EGateResult gate = PhysicalGate::requestApproval(
+							std::string("delete ") + (is_image ? "image" : "file") +
+							" backup id=" + convert(delete_now_id) +
+							" client='" + clientname + "'");
+
+						if (gate == PhysicalGate::EGateResult_Timeout)
+						{
+							ret.set("delete_now_err", "physical_confirmation_timeout");
+						}
+						else if (gate == PhysicalGate::EGateResult_Denied)
+						{
+							ret.set("delete_now_err", "physical_confirmation_denied");
+							ret.set("physical_gate_reason", PhysicalGate::lastDenyReason());
+						}
+						else if (is_image)
+						{
 							std::string err = deleteOrMarkImageBackup(db, delete_now_id, t_clientid, false);
 							if (!err.empty())
 							{
@@ -1614,27 +1631,12 @@ ACTION_IMPL(backups)
 						}
 						else
 						{
-							PhysicalGate::EGateResult gate = PhysicalGate::requestApproval(
-								"delete file backup id=" + convert(delete_now_id) +
-								" client='" + clientname + "'");
-							if (gate == PhysicalGate::EGateResult_Timeout)
+							ServerSettings settings(db);
+							bool result = false;
+							Server->getThreadPool()->executeWait(new ServerCleanupThread(CleanupAction(settings.getSettings()->backupfolder, t_clientid, delete_now_id, false, &result)));
+							if (!result)
 							{
-								ret.set("delete_now_err", "physical_confirmation_timeout");
-							}
-							else if (gate == PhysicalGate::EGateResult_Denied)
-							{
-								ret.set("delete_now_err", "physical_confirmation_denied");
-								ret.set("physical_gate_reason", PhysicalGate::lastDenyReason());
-							}
-							else
-							{
-								ServerSettings settings(db);
-								bool result = false;
-								Server->getThreadPool()->executeWait(new ServerCleanupThread(CleanupAction(settings.getSettings()->backupfolder, t_clientid, delete_now_id, false, &result)));
-								if (!result)
-								{
-									ret.set("delete_now_err", "delete_file_backup_failed");
-								}
+								ret.set("delete_now_err", "delete_file_backup_failed");
 							}
 						}
 					}
